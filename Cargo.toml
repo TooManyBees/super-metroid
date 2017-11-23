@@ -1,0 +1,8 @@
+[package]
+name = "sm"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+
+[dependencies]
+byteorder = "*"
+piston_window = "0.70.0"
