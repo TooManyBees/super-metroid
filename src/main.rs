@@ -1,6 +1,10 @@
 extern crate piston_window;
 extern crate byteorder;
 
+mod bitplanes;
+
+use bitplanes::*;
+
 use piston_window::*;
 use byteorder::{ByteOrder, LittleEndian};
 // use std::fs::File;
@@ -25,6 +29,8 @@ fn print_hex(arr: &[u8]) {
     print!("{:02X}", arr[arr.len() - 1]);
     println!("]");
 }
+
+// https://www.smwcentral.net/?p=viewthread&t=13167
 
 #[inline]
 fn snespc(bank: u8, addr: u16) -> usize {
@@ -51,18 +57,18 @@ impl std::fmt::Debug for FrameIndex {
 }
 
 struct FramePart {
-    xx: u8,
-    pb: u8,
-    yy: u8,
+    xx: i8,
+    priority_b: u8,
+    yy: i8,
     tl: u8,
-    pa: u8,
+    priority_a: u8,
 }
 
 impl std::fmt::Debug for FramePart {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f,
-            "FramePart {{ xx: {:02X}, pb: {:02X}, yy: {:02X}, tl: {:02X}, pa: {:02X} }}",
-            self.xx, self.pb, self.yy, self.tl, self.pa
+            "FramePart {{ xx: {:02X}, priority_b: {:02X}, yy: {:02X}, tl: {:02X}, priority_a: {:02X} }}",
+            self.xx, self.priority_b, self.yy, self.tl, self.priority_a
         )
     }
 }
@@ -146,11 +152,11 @@ impl<'a> DNA<'a> {
         self.rom[addr+2..addr+2+5*num_parts]
             .chunks(5)
             .map(|slice| FramePart {
-                xx: slice[0],
-                pb: slice[1],
-                yy: slice[2],
+                xx: slice[0] as i8,
+                priority_a: slice[1],
+                yy: slice[2] as i8,
                 tl: slice[3],
-                pa: slice[4],
+                priority_b: slice[4],
             })
             .collect()
     }
@@ -184,46 +190,50 @@ impl<'a> std::fmt::Debug for DNA<'a> {
     }
 }
 
-fn bgr555_rgb888(bgr: u16) -> (u8, u8, u8) {
+type RGB = (u8, u8, u8);
+
+fn bgr555_rgb888(bgr: u16) -> RGB {
     let r = (bgr & 0b11111) * 8;
     let g = ((bgr & 0b1111100000) >> 5) * 8;
     let b = ((bgr & 0b111110000000000) >> 10) * 8;
     (r as u8, g as u8, b as u8)
 }
 
+fn bgr555_rgbf32(bgr: u16) -> (f32, f32, f32) {
+    let r = (bgr & 0b11111) as f32 / 31.0;
+    let g = ((bgr & 0b1111100000) >> 5) as f32 / 31.0;
+    let b = ((bgr & 0b111110000000000) >> 10) as f32 / 31.0;
+    (r, g, b)
+}
+
+// fn bgr555_rgb565(bgr: u16) -> u16 {
+//     // Used by some oled screens
+//     let r = (bgr & 0b11111) << 11;
+//     let g = ((bgr & 0b1111100000) >> 5) << 6;
+//     let b = ((bgr & 0b111110000000000) >> 10);
+//     r | g | b
+// }
+
+fn lookup(bytes: &[u8], palette: &[RGB]) -> Vec<RGB> {
+    let mut v = Vec::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        v.push(palette[((byte >> 4) & 0xFu8) as usize]);
+        v.push(palette[(byte & 0xF) as usize]);
+    }
+    v
+}
+
 fn main() {
-    // let mut window: PistonWindow =
-    //    WindowSettings::new(String::from_utf8_lossy(BYTES), [640, 480])
-    //    .exit_on_esc(true).build().unwrap();
-    // while let Some(event) = window.next() {
-    //    window.draw_2d(&event, |context, graphics| {
-    //        clear([1.0; 4], graphics);
-    //        rectangle([1.0, 0.0, 0.0, 1.0],
-    //                  [0.0, 0.0, 100.0, 100.0],
-    //                  context.transform,
-    //                  graphics);
-    //  });
-    // }
-
-    // let rom = {
-    //     let mut file = File::open("data/Super Metroid (Japan, USA) (En,Ja).sfc").expect("Couldn't open ROM");
-    //     let mut buf_reader = BufReader::new(file);
-    //     let mut contents = Vec::new();
-    //     buf_reader.read_to_end(&mut contents).expect("Couldn't read ROM");
-    //     contents
-    // };
-
     let ebi = DNA::read_from_rom(&ROM, 0xA0E63F);
     // println!("{:?}", ebi.frames(6));
     let gfx = ebi.graphics();
     println!();
     let rgb_palette: Vec<_> = ebi.palette()
         .chunks(2)
-        .map(|bgr| bgr555_rgb888(LittleEndian::read_u16(bgr)))
+        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))
         .collect();
-    println!("{:?}", rgb_palette);
-    // println!("{:?}", &gfx[0..128]);
 
+    let tiles: Vec<Vec<_>> = Bitplanes::new(gfx).collect();
 
     let opengl = OpenGL::V3_2;
     let mut window: PistonWindow =
@@ -235,7 +245,21 @@ fn main() {
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
             clear([1.0; 4], graphics);
-            image("bees", context.transform, graphics);
+
+            for (i, tile) in tiles.iter().enumerate() {
+                let (tile_x, tile_y) = (i % 16, i / 16);
+                for (j, index) in tile.iter().enumerate() {
+                    let (r, g, b) = rgb_palette[*index as usize];
+                    let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
+                    rectangle(
+                        [r, g, b, 1.0],
+                        [(x * 8) as f64, (y * 8) as f64, 8.0, 8.0],
+                        context.transform,
+                        graphics
+                    );
+                }
+            }
+
         });
     }
 }

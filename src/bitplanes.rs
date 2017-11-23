@@ -1,48 +1,52 @@
 // http://fdwr.tripod.com/docs/snesgfx.txt
+use std::iter::Map;
+use std::slice::Chunks;
 
 pub struct Bitplanes<'a> {
-    v: &'a [u8],
-    bytes: &'a [u8],
-    mask: u8,
+    chunks: Chunks<'a, u8>,
 }
 
 impl<'a> Iterator for Bitplanes<'a> {
-    type Item = u8;
+    type Item = Vec<u8>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // mask value of 0 signals indicates that we need to
-        // fetch the next bytes and start the cycle over
-        if self.mask == 0 {
-            if self.v.is_empty() {
-                return None;
-            }
+        self.chunks.next()
+            .map(|chunk| {
+                let (planes01, planes23) = chunk.split_at(16);
+                let mut result = Vec::with_capacity(64);
+                for (bytes01, bytes23) in planes01.chunks(2).zip(planes23.chunks(2)) {
+                    for n in (0..8).rev() {
+                        let mask = 1 << n;
+                        let mut px = 0;
 
-            let (bytes, rest) = self.v.split_at(4);
-            self.bytes = bytes;
-            self.v = rest;
-            self.mask = 0b10000000;
-        }
-
-        let mut result = 0u8;
-        for (n, byte) in self.bytes.iter().enumerate() {
-            if (byte & self.mask) > 0 {
-                result += 1 << (3 - n);
-            }
-        }
-
-        self.mask >>= 1;
-        Some(result)
+                        if bytes23[1] & mask > 0 {
+                            px += 1;
+                        }
+                        px <<= 1;
+                        if bytes23[0] & mask > 0 {
+                            px += 1;
+                        }
+                        px <<= 1;
+                        if bytes01[1] & mask > 0 {
+                            px += 1;
+                        }
+                        px <<= 1;
+                        if bytes01[0] & mask > 0 {
+                            px += 1;
+                        }
+                        result.push(px);
+                    }
+                }
+                result
+            })
     }
 }
 
-static nothing: [u8; 0] = [];
-
 impl<'a> Bitplanes<'a> {
     pub fn new(bytes: &'a [u8]) -> Bitplanes<'a> {
+        assert!(bytes.len() % 32 == 0, "Byte slice doesn't fit into 32-byte tiles");
         Bitplanes {
-            v: bytes,
-            bytes: &nothing,
-            mask: 0,
+            chunks: bytes.chunks(32),
         }
     }
 }
