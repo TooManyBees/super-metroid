@@ -2,8 +2,10 @@ extern crate piston_window;
 extern crate byteorder;
 
 mod bitplanes;
-
 use bitplanes::*;
+
+mod centered_canvas;
+use centered_canvas::CenteredCanvas;
 
 use piston_window::*;
 use byteorder::{ByteOrder, LittleEndian};
@@ -11,13 +13,13 @@ use byteorder::{ByteOrder, LittleEndian};
 // use std::io::BufReader;
 // use std::io::prelude::*;
 
-// const BYTES: &'static [u8] = include_bytes!("data/thing.spr");
 const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,Ja).sfc");
 
 // const SNES_HEADER: bool = false;
 
 // fn snespc(addrlo: usize, addrhi: usize, bank: usize) -> usize {
-//     (addrlo & 255) + ((addrhi & 255) << 8) + ((bank & 127) << 15) - (if SNES_HEADER {0} else {512}) - 32256
+//     (addrlo & 255) + ((addrhi & 255) << 8) + ((bank & 127) << 15)
+//       - (if SNES_HEADER {0} else {512}) - 32256
 // }
 
 fn print_hex(arr: &[u8]) {
@@ -32,12 +34,12 @@ fn print_hex(arr: &[u8]) {
 
 // https://www.smwcentral.net/?p=viewthread&t=13167
 
-#[inline]
+#[inline(always)]
 fn snespc(bank: u8, addr: u16) -> usize {
     (((bank & 127) as usize) << 15) + (addr as usize) - 512 - 32256
 }
 
-#[inline]
+#[inline(always)]
 fn snespc2(addr: u32) -> usize {
     (((addr & 0x7F0000) >> 1) + (addr & 0xFFFF)) as usize - 512 - 32256
 }
@@ -67,8 +69,8 @@ struct FramePart {
 impl std::fmt::Debug for FramePart {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f,
-            "FramePart {{ xx: {:02X}, priority_b: {:02X}, yy: {:02X}, tl: {:02X}, priority_a: {:02X} }}",
-            self.xx, self.priority_b, self.yy, self.tl, self.priority_a
+            "FramePart {{ xx: {:02X}, priority_a: {:08b}, yy: {:02X}, tl: {:02X}, priority_b: {:08b} }}",
+            self.xx, self.priority_a, self.yy, self.tl, self.priority_b
         )
     }
 }
@@ -176,7 +178,6 @@ impl<'a> DNA<'a> {
 
     fn graphics(&self) -> &[u8] {
         let addr = snespc2(self.graphadr);
-        println!("graphics at {:06X}", addr);
         &self.rom[addr..addr + self.sizeb as usize]
     }
 }
@@ -190,16 +191,17 @@ impl<'a> std::fmt::Debug for DNA<'a> {
     }
 }
 
-type RGB = (u8, u8, u8);
+// type RGBu8 = (u8, u8, u8);
+type RGBf32 = (f32, f32, f32);
 
-fn bgr555_rgb888(bgr: u16) -> RGB {
-    let r = (bgr & 0b11111) * 8;
-    let g = ((bgr & 0b1111100000) >> 5) * 8;
-    let b = ((bgr & 0b111110000000000) >> 10) * 8;
-    (r as u8, g as u8, b as u8)
-}
+// fn bgr555_rgb888(bgr: u16) -> RGBu8 {
+//     let r = (bgr & 0b11111) * 8;
+//     let g = ((bgr & 0b1111100000) >> 5) * 8;
+//     let b = ((bgr & 0b111110000000000) >> 10) * 8;
+//     (r as u8, g as u8, b as u8)
+// }
 
-fn bgr555_rgbf32(bgr: u16) -> (f32, f32, f32) {
+fn bgr555_rgbf32(bgr: u16) -> RGBf32 {
     let r = (bgr & 0b11111) as f32 / 31.0;
     let g = ((bgr & 0b1111100000) >> 5) as f32 / 31.0;
     let b = ((bgr & 0b111110000000000) >> 10) as f32 / 31.0;
@@ -214,20 +216,19 @@ fn bgr555_rgbf32(bgr: u16) -> (f32, f32, f32) {
 //     r | g | b
 // }
 
-fn lookup(bytes: &[u8], palette: &[RGB]) -> Vec<RGB> {
-    let mut v = Vec::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        v.push(palette[((byte >> 4) & 0xFu8) as usize]);
-        v.push(palette[(byte & 0xF) as usize]);
-    }
-    v
-}
+// fn lookup(bytes: &[u8], palette: &[RGBu8]) -> Vec<RGBu8> {
+//     let mut v = Vec::with_capacity(bytes.len() * 2);
+//     for byte in bytes {
+//         v.push(palette[((byte >> 4) & 0xFu8) as usize]);
+//         v.push(palette[(byte & 0xF) as usize]);
+//     }
+//     v
+// }
 
 fn main() {
     let ebi = DNA::read_from_rom(&ROM, 0xA0E63F);
-    // println!("{:?}", ebi.frames(6));
     let gfx = ebi.graphics();
-    println!();
+
     let rgb_palette: Vec<_> = ebi.palette()
         .chunks(2)
         .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))
@@ -236,8 +237,9 @@ fn main() {
     let tiles: Vec<Vec<_>> = Bitplanes::new(gfx).collect();
 
     let opengl = OpenGL::V3_2;
+    let zoom = 4usize;
     let mut window: PistonWindow =
-        WindowSettings::new(ebi.name(), [256, 24])
+        WindowSettings::new(ebi.name(), [128 * zoom as u32, 24 * zoom as u32])
             .exit_on_esc(true)
             .opengl(opengl)
             .build()
@@ -253,7 +255,7 @@ fn main() {
                     let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
                     rectangle(
                         [r, g, b, 1.0],
-                        [(x * 8) as f64, (y * 8) as f64, 8.0, 8.0],
+                        [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
                         context.transform,
                         graphics
                     );

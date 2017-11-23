@@ -1,5 +1,4 @@
 // http://fdwr.tripod.com/docs/snesgfx.txt
-use std::iter::Map;
 use std::slice::Chunks;
 
 pub struct Bitplanes<'a> {
