@@ -15,7 +15,7 @@ use sprite::Sprite;
 use write_gif::write_sprite_to_gif;
 use byteorder::{ByteOrder, LittleEndian};
 use util::{bgr555_rgbf32, bgr555_rgb888};
-use std::{thread, time};
+use std::{env, thread, time, process};
 
 use piston_window::*;
 
@@ -124,12 +124,71 @@ fn render_gif(creature: DNA, num_frames: usize) {
     write_sprite_to_gif(&creature.name().unwrap_or("enemy".to_string()), &frames, &rgb_palette);
 }
 
-fn main() {
-    let creature = DNA::read_from_rom(&ROM, 0xA0E63F);
-    // let creature = DNA::read_from_rom(&ROM, 0xA0DD7F);
-    // let creature = DNA::read_from_rom(&ROM, 0xA0EEBF);
+enum Action {
+    Spritesheet,
+    Animate,
+    Gif,
+}
 
-    render_sprite_sheet(creature);
-    // render_animation(creature, 6);
-    // render_gif(creature, 6);
+static HINT_STRING: &'static str =
+    "Try:\n\
+    A0E63F (evir)\n\
+    A0DD7F (metroid)\n\
+    A0EEBF (super metroid)";
+
+static FLAG_STRING: &'static str =
+    "Try:\n\
+    -s (spritesheet)\n\
+    -a (animate)\n\
+    -g (gif)";
+
+static HELP_STRING: &'static str =
+    "[-s | -a | -g] [@n] <addr>\n\
+    -s = spritesheet, default\n\
+    -a = animate\n\
+    -g = gif\n\
+    n = number of frames (for animate / gif modes)\n\
+    addr = SNES address in hex";
+
+fn main() {
+    use Action::*;
+
+    if env::args().count() <= 1 {
+        eprintln!("Usage: {} {}", env::args().nth(0).unwrap_or("programname".to_string()), HELP_STRING);
+        process::exit(1);
+    }
+
+    let (action, addr): (Action, Option<u32>) = env::args().skip(1)
+        .fold((Spritesheet, None), |acc, arg| {
+            if arg.starts_with("-") {
+                match arg.as_str() {
+                    "-s" => (Spritesheet, acc.1),
+                    "-a" => (Animate, acc.1),
+                    "-g" => (Gif, acc.1),
+                    s @ _ => {
+                        eprintln!("Unknown flag {:?}. {}", s, FLAG_STRING);
+                        process::exit(1)
+                    },
+                }
+            } else {
+                if let Ok(addr) = u32::from_str_radix(&arg, 16) {
+                    (acc.0, Some(addr))
+                } else {
+                    eprintln!("Couldn't parse address {:?} as hex. {}", arg, HINT_STRING);
+                    process::exit(1)
+                }
+            }
+        });
+
+    if let Some(addr) = addr {
+        let creature = DNA::read_from_rom(&ROM, addr);
+        match action {
+            Spritesheet => render_sprite_sheet(creature),
+            Animate => render_animation(creature, 6),
+            Gif => render_gif(creature, 6),
+        }
+    } else {
+        eprintln!("Required SNES address missing.");
+        process::exit(1);
+    }
 }
