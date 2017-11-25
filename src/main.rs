@@ -22,15 +22,15 @@ const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,J
 //       - (if SNES_HEADER {0} else {512}) - 32256
 // }
 
-fn print_hex(arr: &[u8]) {
-    print!("[");
-    for byte in arr.iter().take(arr.len() - 1) {
-        print!("{:02X} ", byte);
+// fn print_hex(arr: &[u8]) {
+//     print!("[");
+//     for byte in arr.iter().take(arr.len() - 1) {
+//         print!("{:02X} ", byte);
 
-    }
-    print!("{:02X}", arr[arr.len() - 1]);
-    println!("]");
-}
+//     }
+//     print!("{:02X}", arr[arr.len() - 1]);
+//     println!("]");
+// }
 
 // https://www.smwcentral.net/?p=viewthread&t=13167
 
@@ -66,6 +66,32 @@ struct FramePart {
     priority_a: u8,
 }
 
+impl FramePart {
+    #[inline(always)]
+    fn is_double(&self) -> bool {
+        (self.priority_a & 0b10000000) > 0
+    }
+
+    // fn x_offset(&self) -> i16 {
+    //     // let add_FF = (self.priority_a & 0b01) > 0;
+    //     if self.priority_a & 0b01 > 0 {
+    //         self.xx as i16 + 0xFF
+    //     } else {
+    //         self.xx as i16
+    //     }
+    // }
+
+    // #[inline(always)]
+    // fn flip_vertical(&self) -> bool {
+    //     (self.priority_b & 0b01000000) > 0
+    // }
+
+    // #[inline(always)]
+    // fn flip_horizontal(&self) -> bool {
+    //     (self.priority_b & 0b00100000) > 0
+    // }
+}
+
 impl std::fmt::Debug for FramePart {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f,
@@ -86,6 +112,91 @@ impl std::fmt::Debug for Frame {
             "Frame {{ duration: {:02X}, parts: {:?} }}",
             self.duration, self.parts
         )
+    }
+}
+
+impl Frame {
+    fn dimensions(&self) -> (u16, u16, u16, u16) {
+        let mut top = 0i8;
+        let mut bottom = 0i8;
+        let mut left = 0i8;
+        let mut right = 0i8;
+        for part in self.parts.iter() {
+            let size = if part.is_double() { 16 } else { 8 };
+            if part.xx < left { left = part.xx };
+            if part.xx + size > right { right = part.xx + size };
+            if part.yy < top { top = part.yy };
+            if part.yy + size > bottom { bottom = part.yy + size }
+        }
+        (-left as u16, -top as u16, (right - left) as u16, (bottom - top) as u16)
+    }
+
+    fn composited(&self, tiles: &[Vec<u8>]) -> CompositedFrame {
+        let (zx, zy, width, height) = self.dimensions();
+
+        let mut canvas = CenteredCanvas::new(width, height, (zx, zy));
+
+        for part in self.parts.iter().rev() {
+            if part.is_double() {
+                let n = part.tl as usize;
+                let tile0 = &tiles[n];
+                let tile1 = &tiles[n+1];
+                let tile2 = &tiles[n + 16];
+                let tile3 = &tiles[n + 17];
+                canvas.paint_block(tile0, tile1, tile2, tile3, part.xx as i16, part.yy as i16);
+            } else {
+                let tile = &tiles[part.tl as usize];
+                canvas.paint_tile(tile, part.xx as i16, part.yy as i16);
+            }
+        }
+        CompositedFrame {
+            buffer: canvas.buffer,
+            width: canvas.width,
+            height: canvas.height,
+            duration: self.duration,
+        }
+    }
+}
+
+pub struct CompositedFrame {
+    buffer: Vec<u8>,
+    width: u16,
+    height: u16,
+    duration: u16,
+}
+
+pub struct Sprite {
+    frames: Vec<CompositedFrame>,
+    index: usize,
+    time: u16,
+}
+
+impl Sprite {
+    pub fn new(frames: Vec<CompositedFrame>) -> Self{
+        Sprite {
+            frames: frames,
+            index: 0,
+            time: 0,
+        }
+    }
+
+    pub fn frame(&mut self) -> &CompositedFrame {
+        if self.time >= self.frames[self.index].duration {
+            self.time = 1;
+            self.index = (self.index + 1) % self.frames.len();
+            &self.frames[self.index]
+        } else {
+            self.time += 1;
+            &self.frames[self.index as usize]
+        }
+    }
+
+    pub fn width(&self) -> u16 {
+        self.frames.iter().max_by_key(|f| f.width).unwrap().width
+    }
+
+    pub fn height(&self) -> u16 {
+        self.frames.iter().max_by_key(|f| f.height).unwrap().height
     }
 }
 
@@ -234,33 +345,51 @@ fn main() {
         .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))
         .collect();
 
-    let tiles: Vec<Vec<_>> = Bitplanes::new(gfx).collect();
+    let tiles: Vec<_> = Bitplanes::new(gfx).collect();
+    let frames: Vec<_> = ebi.frames(6).iter().map(|f| f.composited(&tiles)).collect();
+    let mut sprite = Sprite::new(frames);
 
     let opengl = OpenGL::V3_2;
-    let zoom = 4usize;
+    let zoom = 8usize;
     let mut window: PistonWindow =
-        WindowSettings::new(ebi.name(), [128 * zoom as u32, 24 * zoom as u32])
+        WindowSettings::new(ebi.name(), [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
             .exit_on_esc(true)
             .opengl(opengl)
+            .vsync(true)
             .build()
             .unwrap();
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
             clear([1.0; 4], graphics);
 
-            for (i, tile) in tiles.iter().enumerate() {
-                let (tile_x, tile_y) = (i % 16, i / 16);
-                for (j, index) in tile.iter().enumerate() {
-                    let (r, g, b) = rgb_palette[*index as usize];
-                    let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
-                    rectangle(
-                        [r, g, b, 1.0],
-                        [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
-                        context.transform,
-                        graphics
-                    );
+            let ref composite = sprite.frame();
+            for (i, p) in composite.buffer.iter().enumerate() {
+                if *p == 0 {
+                    continue;
                 }
+                let (px, py) = (i % composite.width as usize, i / composite.width as usize);
+                let (r, g, b) = rgb_palette[*p as usize];
+                rectangle(
+                    [r, g, b, 1.0],
+                    [(px * zoom) as f64, (py * zoom) as f64, zoom as f64, zoom as f64],
+                    context.transform,
+                    graphics,
+                )
             }
+
+            // for (i, tile) in tiles.iter().enumerate() {
+            //     let (tile_x, tile_y) = (i % 16, i / 16);
+            //     for (j, index) in tile.iter().enumerate() {
+            //         let (r, g, b) = rgb_palette[*index as usize];
+            //         let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
+            //         rectangle(
+            //             [r, g, b, 1.0],
+            //             [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
+            //             context.transform,
+            //             graphics
+            //         );
+            //     }
+            // }
 
         });
     }
