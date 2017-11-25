@@ -31,7 +31,7 @@ impl<'a> DNA<'a> {
         }
     }
 
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Option<String> {
         let addr = snespc(0x34, self.ename);
         snes_string(self.rom, addr)
     }

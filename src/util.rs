@@ -17,12 +17,12 @@ pub fn snespc2(addr: u32) -> usize {
     (((addr & 0x7F0000) >> 1) + (addr & 0xFFFF)) as usize - 512 - 32256
 }
 
-pub fn snes_string(rom: &[u8], addr: usize) -> String {
+pub fn snes_string(rom: &[u8], addr: usize) -> Option<String> {
     let mut v = Vec::new();
     for c in rom[addr..].iter().take_while(|c| **c != 0x20) {
         v.push(*c);
     }
-    String::from_utf8(v).expect("Couldn't convert ascii to String")
+    String::from_utf8(v).ok()
 }
 
 pub fn print_hex(arr: &[u8]) {

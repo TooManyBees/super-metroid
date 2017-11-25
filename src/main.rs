@@ -33,13 +33,13 @@ fn main() {
     let frames: Vec<_> = creature.frames(6).iter().map(|f| f.composited(&tiles)).collect();
     let mut sprite = Sprite::new(frames);
 
-    // write_sprite_to_gif(format!("{}.gif", creature.name()), &frames, &rgb_palette);
+    // write_sprite_to_gif(format!("{}.gif", creature.name().unwrap_or("?".to_string())), &frames, &rgb_palette);
 
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
     let mut window: PistonWindow =
-        WindowSettings::new(creature.name(), [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
-        // WindowSettings::new(creature.name(), [128 * zoom as u32, (tiles.len()* zoom / 2) as u32])
+        WindowSettings::new(creature.name().unwrap_or("?".to_string()), [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
+        // WindowSettings::new(creature.name().unwrap_or("?".to_string()), [128 * zoom as u32, (tiles.len()* zoom / 2) as u32])
             .exit_on_esc(true)
             .opengl(opengl)
             .vsync(true)
