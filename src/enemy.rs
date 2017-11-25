@@ -197,7 +197,6 @@ impl Frame {
         let (zx, zy, width, height) = self.dimensions();
 
         let mut canvas = CenteredCanvas::new(width, height, (zx, zy));
-        let half = self.parts.len()/2;
 
         for part in self.parts.iter().rev() {
             if part.is_double() {

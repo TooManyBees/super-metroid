@@ -1,7 +1,6 @@
 pub struct Sprite {
     frames: Vec<CompositedFrame>,
     index: usize,
-    time: u16,
 }
 
 impl Sprite {
@@ -9,19 +8,13 @@ impl Sprite {
         Sprite {
             frames: frames,
             index: 0,
-            time: 0,
         }
     }
 
     pub fn frame(&mut self) -> &CompositedFrame {
-        if self.time >= self.frames[self.index].duration {
-            self.time = 1;
-            self.index = (self.index + 1) % self.frames.len();
-            &self.frames[self.index]
-        } else {
-            self.time += 1;
-            &self.frames[self.index as usize]
-        }
+        let f = &self.frames[self.index as usize];
+        self.index = (self.index + 1) % self.frames.len();
+        f
     }
 
     pub fn width(&self) -> u16 {

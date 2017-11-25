@@ -14,32 +14,73 @@ use enemy::DNA;
 use sprite::Sprite;
 use write_gif::write_sprite_to_gif;
 use byteorder::{ByteOrder, LittleEndian};
-use util::bgr555_rgbf32;
+use util::{bgr555_rgbf32, bgr555_rgb888};
+use std::{thread, time};
 
 use piston_window::*;
 
 const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,Ja).sfc");
 
-fn main() {
-    let creature = DNA::read_from_rom(&ROM, 0xA0E63F);
+#[allow(unused)]
+fn render_sprite_sheet(creature: DNA) {
     let gfx = creature.graphics();
-
     let rgb_palette: Vec<_> = creature.palette()
         .chunks(2)
-        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))
+        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))   
         .collect();
 
     let tiles: Vec<_> = Bitplanes::new(gfx).collect();
-    let frames: Vec<_> = creature.frames(6).iter().map(|f| f.composited(&tiles)).collect();
-    let mut sprite = Sprite::new(frames);
-
-    // write_sprite_to_gif(format!("{}.gif", creature.name().unwrap_or("?".to_string())), &frames, &rgb_palette);
 
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
-    let mut window: PistonWindow =
-        WindowSettings::new(creature.name().unwrap_or("?".to_string()), [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
-        // WindowSettings::new(creature.name().unwrap_or("?".to_string()), [128 * zoom as u32, (tiles.len()* zoom / 2) as u32])
+    let mut window: PistonWindow = WindowSettings::new(
+        creature.name().unwrap_or("?".to_string()),
+        [128 * zoom as u32, (tiles.len()* zoom / 2) as u32])
+            .exit_on_esc(true)
+            .opengl(opengl)
+            .vsync(true)
+            .build()
+            .unwrap();
+
+    while let Some(event) = window.next() {
+        window.draw_2d(&event, |context, graphics| {
+            clear([0.0; 4], graphics);
+
+            for (i, tile) in tiles.iter().enumerate() {
+                let (tile_x, tile_y) = (i % 16, i / 16);
+                for (j, index) in tile.iter().enumerate() {
+                    let (r, g, b) = rgb_palette[*index as usize];
+                    let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
+                    rectangle(
+                        [r, g, b, 1.0],
+                        [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
+                        context.transform,
+                        graphics
+                    );
+                }
+            }
+
+        });
+    }
+}
+
+#[allow(unused)]
+fn render_animation(creature: DNA, num_frames: usize) {
+    let gfx = creature.graphics();
+    let rgb_palette: Vec<_> = creature.palette()
+        .chunks(2)
+        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))   
+        .collect();
+
+    let tiles: Vec<_> = Bitplanes::new(gfx).collect();
+    let frames: Vec<_> = creature.frames(num_frames).iter().map(|f| f.composited(&tiles)).collect();
+    let mut sprite = Sprite::new(frames);
+
+    let opengl = OpenGL::V3_2;
+    let zoom = 2usize;
+    let mut window: PistonWindow =WindowSettings::new(
+        creature.name().unwrap_or("?".to_string()),
+        [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
             .exit_on_esc(true)
             .opengl(opengl)
             .vsync(true)
@@ -47,7 +88,6 @@ fn main() {
             .unwrap();
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
-            // clear([background.0, background.1, background.2, 1.0], graphics);
             clear([0.0; 4], graphics);
 
             let ref composite = sprite.frame();
@@ -64,21 +104,32 @@ fn main() {
                     graphics,
                 )
             }
-
-            // for (i, tile) in tiles.iter().enumerate() {
-            //     let (tile_x, tile_y) = (i % 16, i / 16);
-            //     for (j, index) in tile.iter().enumerate() {
-            //         let (r, g, b) = rgb_palette[*index as usize];
-            //         let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
-            //         rectangle(
-            //             [r, g, b, 1.0],
-            //             [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
-            //             context.transform,
-            //             graphics
-            //         );
-            //     }
-            // }
-
+            let duration = time::Duration::from_millis(composite.duration as u64 * 16);
+            thread::sleep(duration);
         });
     }
+}
+
+#[allow(unused)]
+fn render_gif(creature: DNA, num_frames: usize) {
+    let gfx = creature.graphics();
+    let rgb_palette: Vec<_> = creature.palette()
+        .chunks(2)
+        .map(|bgr| bgr555_rgb888(LittleEndian::read_u16(bgr)))
+        .collect();
+
+    let tiles: Vec<_> = Bitplanes::new(gfx).collect();
+    let frames: Vec<_> = creature.frames(num_frames).iter().map(|f| f.composited(&tiles)).collect();
+
+    write_sprite_to_gif(&creature.name().unwrap_or("enemy".to_string()), &frames, &rgb_palette);
+}
+
+fn main() {
+    let creature = DNA::read_from_rom(&ROM, 0xA0E63F);
+    // let creature = DNA::read_from_rom(&ROM, 0xA0DD7F);
+    // let creature = DNA::read_from_rom(&ROM, 0xA0EEBF);
+
+    render_sprite_sheet(creature);
+    // render_animation(creature, 6);
+    // render_gif(creature, 6);
 }

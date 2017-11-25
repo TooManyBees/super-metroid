@@ -56,6 +56,6 @@ pub fn bgr555_rgb565(bgr: u16) -> u16 {
     // Used by some oled screens
     let r = (bgr & 0b11111) << 11;
     let g = ((bgr & 0b1111100000) >> 5) << 6;
-    let b = ((bgr & 0b111110000000000) >> 10);
+    let b = (bgr & 0b111110000000000) >> 10;
     r | g | b
 }
