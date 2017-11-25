@@ -9,7 +9,6 @@ mod sprite;
 mod util;
 mod write_gif;
 
-use bitplanes::*;
 use enemy::DNA;
 use sprite::Sprite;
 use write_gif::write_sprite_to_gif;
@@ -23,13 +22,12 @@ const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,J
 
 #[allow(unused)]
 fn render_sprite_sheet(creature: DNA) {
-    let gfx = creature.graphics();
     let rgb_palette: Vec<_> = creature.palette()
         .chunks(2)
         .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))   
         .collect();
 
-    let tiles: Vec<_> = Bitplanes::new(gfx).collect();
+    let tiles = creature.graphics();
 
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
@@ -66,13 +64,12 @@ fn render_sprite_sheet(creature: DNA) {
 
 #[allow(unused)]
 fn render_animation(creature: DNA, num_frames: usize) {
-    let gfx = creature.graphics();
     let rgb_palette: Vec<_> = creature.palette()
         .chunks(2)
         .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))   
         .collect();
 
-    let tiles: Vec<_> = Bitplanes::new(gfx).collect();
+    let tiles = creature.graphics();
     let frames: Vec<_> = creature.frames(num_frames).iter().map(|f| f.composited(&tiles)).collect();
     let mut sprite = Sprite::new(frames);
 
@@ -112,13 +109,12 @@ fn render_animation(creature: DNA, num_frames: usize) {
 
 #[allow(unused)]
 fn render_gif(creature: DNA, num_frames: usize) {
-    let gfx = creature.graphics();
     let rgb_palette: Vec<_> = creature.palette()
         .chunks(2)
         .map(|bgr| bgr555_rgb888(LittleEndian::read_u16(bgr)))
         .collect();
 
-    let tiles: Vec<_> = Bitplanes::new(gfx).collect();
+    let tiles = creature.graphics();
     let frames: Vec<_> = creature.frames(num_frames).iter().map(|f| f.composited(&tiles)).collect();
 
     write_sprite_to_gif(&creature.name().unwrap_or("enemy".to_string()), &frames, &rgb_palette);

@@ -2,6 +2,7 @@ use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
 use centered_canvas::CenteredCanvas;
 use sprite::CompositedFrame;
+use bitplanes::Bitplanes;
 #[allow(unused_imports)]
 use util::{snespc, snespc2, snes_string, print_hex};
 
@@ -86,9 +87,10 @@ impl<'a> DNA<'a> {
             .collect()
     }
 
-    pub fn graphics(&self) -> &[u8] {
+    pub fn graphics(&self) -> Vec<Vec<u8>> {
         let addr = snespc2(self.graphadr);
-        &self.rom[addr..addr + self.sizeb as usize]
+        let data = &self.rom[addr..addr + self.sizeb as usize];
+        Bitplanes::new(data).collect()
     }
 }
 
