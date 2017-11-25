@@ -11,27 +11,27 @@ impl CenteredCanvas {
             width: width,
             height: height,
             zero: zero.1 * width + zero.0,
-            buffer: vec![0; (width * height) as usize],
+            buffer: vec![0; width as usize * height as usize],
         }
     }
 
-    fn offset(&self, x: i16, y: i16) -> u16 {
-        let mut offset = self.zero;
+    fn offset(&self, x: i16, y: i16) -> usize {
+        let mut offset = self.zero as usize;
         if x >= 0 {
-            offset += x as u16;            
+            offset += x as usize;
         } else {
-            offset -= (-x) as u16;
+            offset -= (-x) as usize;
         }
         if y >= 0 {
-            offset += y as u16 * self.width;
+            offset += y as usize * self.width as usize;
         } else {
-            offset -= ((-y) as u16) * self.width;
+            offset -= ((-y) as usize) * self.width as usize;
         }
         offset
     }
 
-    fn _paint_tile(&mut self, tile: &[u8], offset: u16) {
-        let mut index = offset as usize;
+    fn _paint_tile(&mut self, tile: &[u8], offset: usize) {
+        let mut index = offset;
         for row in tile.chunks(8) {
             for (n, px) in row.iter().enumerate() {
                 if *px == 0 {
@@ -49,7 +49,7 @@ impl CenteredCanvas {
     }
 
     pub fn paint_block(&mut self, tile0: &[u8], tile1: &[u8], tile2: &[u8], tile3: &[u8], x: i16, y: i16) {
-        let width = self.width;
+        let width = self.width as usize;
         let offset = self.offset(x, y);
         self._paint_tile(&tile0, offset);
         self._paint_tile(&tile1, offset + 8);
