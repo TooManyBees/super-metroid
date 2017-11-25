@@ -1,5 +1,6 @@
 extern crate piston_window;
 extern crate byteorder;
+extern crate gif;
 
 mod bitplanes;
 use bitplanes::*;
@@ -12,6 +13,9 @@ use byteorder::{ByteOrder, LittleEndian};
 // use std::fs::File;
 // use std::io::BufReader;
 // use std::io::prelude::*;
+
+mod write_gif;
+use write_gif::write_sprite_to_gif;
 
 const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,Ja).sfc");
 
@@ -302,15 +306,15 @@ impl<'a> std::fmt::Debug for DNA<'a> {
     }
 }
 
-// type RGBu8 = (u8, u8, u8);
-type RGBf32 = (f32, f32, f32);
+pub type RGBu8 = (u8, u8, u8);
+pub type RGBf32 = (f32, f32, f32);
 
-// fn bgr555_rgb888(bgr: u16) -> RGBu8 {
-//     let r = (bgr & 0b11111) * 8;
-//     let g = ((bgr & 0b1111100000) >> 5) * 8;
-//     let b = ((bgr & 0b111110000000000) >> 10) * 8;
-//     (r as u8, g as u8, b as u8)
-// }
+fn bgr555_rgb888(bgr: u16) -> RGBu8 {
+    let r = (bgr & 0b11111) * 8;
+    let g = ((bgr & 0b1111100000) >> 5) * 8;
+    let b = ((bgr & 0b111110000000000) >> 10) * 8;
+    (r as u8, g as u8, b as u8)
+}
 
 fn bgr555_rgbf32(bgr: u16) -> RGBf32 {
     let r = (bgr & 0b11111) as f32 / 31.0;
@@ -327,15 +331,6 @@ fn bgr555_rgbf32(bgr: u16) -> RGBf32 {
 //     r | g | b
 // }
 
-// fn lookup(bytes: &[u8], palette: &[RGBu8]) -> Vec<RGBu8> {
-//     let mut v = Vec::with_capacity(bytes.len() * 2);
-//     for byte in bytes {
-//         v.push(palette[((byte >> 4) & 0xFu8) as usize]);
-//         v.push(palette[(byte & 0xF) as usize]);
-//     }
-//     v
-// }
-
 fn main() {
     let ebi = DNA::read_from_rom(&ROM, 0xA0E63F);
     let gfx = ebi.graphics();
@@ -348,6 +343,8 @@ fn main() {
     let tiles: Vec<_> = Bitplanes::new(gfx).collect();
     let frames: Vec<_> = ebi.frames(6).iter().map(|f| f.composited(&tiles)).collect();
     let mut sprite = Sprite::new(frames);
+
+    // write_sprite_to_gif("ebi.gif", &frames, &rgb_palette);
 
     let opengl = OpenGL::V3_2;
     let zoom = 8usize;

@@ -6,3 +6,4 @@ authors = ["Jess Bees <jesse@toomanybees.com>"]
 [dependencies]
 byteorder = "*"
 piston_window = "0.70.0"
+gif = "*"
