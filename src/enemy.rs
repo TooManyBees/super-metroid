@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
 use centered_canvas::CenteredCanvas;
 use sprite::CompositedFrame;
@@ -126,33 +126,38 @@ struct FramePart {
 impl FramePart {
     #[inline(always)]
     fn is_double(&self) -> bool {
-        (self.priority_a & 0b10000000) > 0
+        self.priority_a & (1 << 7) > 0
     }
 
-    // fn x_offset(&self) -> i16 {
-    //     // let add_FF = (self.priority_a & 0b01) > 0;
-    //     if self.priority_a & 0b01 > 0 {
-    //         self.xx as i16 + 0xFF
-    //     } else {
-    //         self.xx as i16
-    //     }
-    // }
+    #[inline(always)]
+    fn x(&self) -> i16 {
+        // if self.priority_a & 0x01 > 0 {
+        //     self.xx as i16 + 0xFF
+        // } else {
+            self.xx as i16
+        // }
+    }
 
-    // #[inline(always)]
-    // fn flip_vertical(&self) -> bool {
-    //     (self.priority_b & 0b01000000) > 0
-    // }
+    #[inline(always)]
+    fn y(&self) -> i16 {
+        self.yy as i16
+    }
 
-    // #[inline(always)]
-    // fn flip_horizontal(&self) -> bool {
-    //     (self.priority_b & 0b00100000) > 0
-    // }
+    #[inline(always)]
+    fn flip_horizontal(&self) -> bool {
+        self.priority_b & (1 << 6) > 0
+    }
+
+    #[inline(always)]
+    fn flip_vertical(&self) -> bool {
+        self.priority_b & (1 << 7) > 0
+    }
 }
 
 impl fmt::Debug for FramePart {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-            "FramePart {{ xx: {:02X}, priority_a: {:08b}, yy: {:02X}, tl: {:02X}, priority_b: {:08b} }}",
+            "FramePart {{ xx: {:02}, priority_a: {:08b}, yy: {:02}, tl: {:03}, priority_b: {:08b} }}",
             self.xx, self.priority_a, self.yy, self.tl, self.priority_b
         )
     }
@@ -180,10 +185,10 @@ impl Frame {
         let mut right = 0i16;
         for part in self.parts.iter() {
             let size = if part.is_double() { 16 } else { 8 };
-            if (part.xx as i16) < left { left = part.xx as i16 };
-            if part.xx as i16 + size > right { right = part.xx as i16 + size };
-            if (part.yy as i16) < top { top = part.yy as i16 };
-            if part.yy as i16 + size > bottom { bottom = part.yy as i16 + size }
+            if part.x() < left { left = part.x() };
+            if part.x() + size > right { right = part.x() + size };
+            if part.y() < top { top = part.y() };
+            if part.y() + size > bottom { bottom = part.y() + size }
         }
         (-left as u16, -top as u16, (right - left) as u16, (bottom - top) as u16)
     }
@@ -192,18 +197,27 @@ impl Frame {
         let (zx, zy, width, height) = self.dimensions();
 
         let mut canvas = CenteredCanvas::new(width, height, (zx, zy));
+        let half = self.parts.len()/2;
 
         for part in self.parts.iter().rev() {
             if part.is_double() {
                 let n = part.tl as usize;
-                let tile0 = &tiles[n];
-                let tile1 = &tiles[n+1];
-                let tile2 = &tiles[n + 16];
-                let tile3 = &tiles[n + 17];
-                canvas.paint_block(tile0, tile1, tile2, tile3, part.xx as i16, part.yy as i16);
+                let mut tile0 = &tiles[n];
+                let mut tile1 = &tiles[n+1];
+                let mut tile2 = &tiles[n + 16];
+                let mut tile3 = &tiles[n + 17];
+                if part.flip_horizontal() {
+                    mem::swap(&mut tile0, &mut tile1);
+                    mem::swap(&mut tile2, &mut tile3);
+                }
+                if part.flip_vertical() {
+                    mem::swap(&mut tile0, &mut tile2);
+                    mem::swap(&mut tile1, &mut tile3);
+                }
+                canvas.paint_block(tile0, tile1, tile2, tile3, part.x(), part.y(), part.flip_horizontal(), part.flip_vertical());
             } else {
                 let tile = &tiles[part.tl as usize];
-                canvas.paint_tile(tile, part.xx as i16, part.yy as i16);
+                canvas.paint_tile(tile, part.x(), part.y(), part.flip_horizontal(), part.flip_vertical());
             }
         }
         CompositedFrame {
