@@ -19,7 +19,7 @@ pub fn snespc2(addr: u32) -> usize {
 
 pub fn snes_string(rom: &[u8], addr: usize) -> Option<String> {
     let mut v = Vec::new();
-    for c in rom[addr..].iter().take_while(|c| **c != 0x20) {
+    for c in rom[addr..].iter().take_while(|c| **c != 0x20 && **c != 0x00) {
         v.push(*c);
     }
     String::from_utf8(v).ok()
