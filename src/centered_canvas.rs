@@ -1,3 +1,5 @@
+// http://old.metroidconstruction.com/tilemapediting.php
+
 pub struct CenteredCanvas {
     pub width: u16,
     pub height: u16,
