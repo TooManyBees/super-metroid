@@ -201,8 +201,13 @@ impl Frame {
         for part in self.parts.iter().rev() {
             if part.is_double() {
                 let n = part.tl as usize;
+                for i in [n, n + 1, n + 16, n + 17].iter() {
+                    if *i >= tiles.len() {
+                        panic!("Frame part wants tile {} but we only have {}. Try a lower number of frames.", i, tiles.len());
+                    }
+                }
                 let mut tile0 = &tiles[n];
-                let mut tile1 = &tiles[n+1];
+                let mut tile1 = &tiles[n + 1];
                 let mut tile2 = &tiles[n + 16];
                 let mut tile3 = &tiles[n + 17];
                 if part.flip_horizontal() {
@@ -215,6 +220,9 @@ impl Frame {
                 }
                 canvas.paint_block(tile0, tile1, tile2, tile3, part.x(), part.y(), part.flip_horizontal(), part.flip_vertical());
             } else {
+                if part.tl as usize >= tiles.len() {
+                    panic!("Frame part wants tile {} but we only have {}. Try a lower number of frames.", part.tl, tiles.len());
+                }
                 let tile = &tiles[part.tl as usize];
                 canvas.paint_tile(tile, part.x(), part.y(), part.flip_horizontal(), part.flip_vertical());
             }

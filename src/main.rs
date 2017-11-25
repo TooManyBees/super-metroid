@@ -143,7 +143,7 @@ static FLAG_STRING: &'static str =
     -g (gif)";
 
 static HELP_STRING: &'static str =
-    "[-s | -a | -g] [@n] <addr>\n\
+    "[-s | -a | -g] [:n] <addr>\n\
     -s = spritesheet, default\n\
     -a = animate\n\
     -g = gif\n\
@@ -158,21 +158,29 @@ fn main() {
         process::exit(1);
     }
 
-    let (action, addr): (Action, Option<u32>) = env::args().skip(1)
-        .fold((Spritesheet, None), |acc, arg| {
+    let (action, addr, num_frames): (Action, Option<u32>, usize) = env::args().skip(1)
+        .fold((Spritesheet, None, 1), |acc, arg| {
             if arg.starts_with("-") {
                 match arg.as_str() {
-                    "-s" => (Spritesheet, acc.1),
-                    "-a" => (Animate, acc.1),
-                    "-g" => (Gif, acc.1),
+                    "-s" => (Spritesheet, acc.1, acc.2),
+                    "-a" => (Animate, acc.1, acc.2),
+                    "-g" => (Gif, acc.1, acc.2),
                     s @ _ => {
                         eprintln!("Unknown flag {:?}. {}", s, FLAG_STRING);
                         process::exit(1)
                     },
                 }
+            } else if arg.starts_with(":") {
+                let s: String = arg.chars().skip(1).collect();
+                if let Ok(num_frames) = usize::from_str_radix(&s, 10) {
+                    (acc.0, acc.1, num_frames)
+                } else {
+                    eprintln!("Couldn't parse number of frames {:?}.", s);
+                    process::exit(1);
+                }
             } else {
                 if let Ok(addr) = u32::from_str_radix(&arg, 16) {
-                    (acc.0, Some(addr))
+                    (acc.0, Some(addr), acc.2)
                 } else {
                     eprintln!("Couldn't parse address {:?} as hex. {}", arg, HINT_STRING);
                     process::exit(1)
@@ -184,8 +192,8 @@ fn main() {
         let creature = DNA::read_from_rom(&ROM, addr);
         match action {
             Spritesheet => render_sprite_sheet(creature),
-            Animate => render_animation(creature, 6),
-            Gif => render_gif(creature, 6),
+            Animate => render_animation(creature, num_frames),
+            Gif => render_gif(creature, num_frames),
         }
     } else {
         eprintln!("Required SNES address missing.");
