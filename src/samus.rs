@@ -135,7 +135,7 @@ pub fn generate_graphics(rom: &[u8], top_frame: DmaEntry, bottom_frame: DmaEntry
     .chain(bottom_part1_padding)
     .chain(Bitplanes::new(&rom[top_frame.0 + top_frame.1..top_frame.0 + top_frame.1 + top_frame.2]))
     .chain(top_part2_padding)
-    .chain(Bitplanes::new(&rom[bottom_frame.0 + top_frame.1..bottom_frame.0 + top_frame.1 + bottom_frame.2]))
+    .chain(Bitplanes::new(&rom[bottom_frame.0 + bottom_frame.1..bottom_frame.0 + bottom_frame.1 + bottom_frame.2]))
     .chain(bottom_part2_padding)
     .collect()
 }
