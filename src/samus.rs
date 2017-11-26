@@ -2,11 +2,14 @@
 
 use byteorder::{ByteOrder, LittleEndian};
 use bitplanes::Bitplanes;
+use frame_map::FrameMap;
 use util::{snespc2, print_hex};
 
 const BASE_TABLES_POINTER: u32 = 0x92808D;
 const BOTTOM_HALF_POINTERS: u32 = 0x92945D;
 const TOP_HALF_POINTERS: u32 = 0x929263;
+
+const FRAME_MAP_START: u32 = 0x918000;
 
 const FRAME_PROGRESSION_TABLE_LOOKUP: u32 = 0x92D94E;
 const FRAME_PROGRESSION_TABLES: u32 = 0x920000;
@@ -23,6 +26,19 @@ pub fn lookup_tilemap_table(rom: &[u8], state: usize, num_frames: usize) -> (&[u
     let b = base_addr + LittleEndian::read_u16(&rom[bottom_half..bottom_half+2]) as usize * 2;
     let t = base_addr + LittleEndian::read_u16(&rom[top_half..top_half+2]) as usize * 2;
     (&rom[b..b + num_frames * 2], &rom[t..t + num_frames * 2])
+}
+
+pub fn tilemaps(rom: &[u8], state: usize, num_frames: usize) -> Vec<Vec<FrameMap>> {
+    let (bottom_pointers, top_pointers) = lookup_tilemap_table(rom, state, num_frames);
+
+    top_pointers.chunks(2).map(LittleEndian::read_u16)
+    .zip(bottom_pointers.chunks(2).map(LittleEndian::read_u16))
+    .map(|(addr_t, addr_b)| {
+        let mut v = FrameMap::from_rom(rom, FRAME_MAP_START, addr_t as usize);
+        v.append(&mut FrameMap::from_rom(rom, FRAME_MAP_START, addr_b as usize));
+        v
+    })
+    .collect()
 }
 
 pub fn lookup_frame_progression(rom: &[u8], state: usize, num_frames: usize) -> &[u8] {
@@ -65,11 +81,6 @@ fn read_bottom_dma(rom: &[u8], index: u8, entry: u8) -> DmaEntry {
     let base = snespc2(BOTTOM_DMA_LOOKUP) + index as usize * 2;
     read_dma(rom, base, entry)
 }
-
-// pub struct Frame {
-//     top:
-//     bottom:
-// }
 
 pub fn lookup_frame_data(rom: &[u8], frame_gfx: &[u8]) -> Vec<(DmaEntry, DmaEntry)> {
     assert!(frame_gfx.len() % 4 == 0, "Frame progression is not evenly divisible by 4 bytes");
