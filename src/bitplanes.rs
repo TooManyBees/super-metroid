@@ -1,18 +1,20 @@
 // http://fdwr.tripod.com/docs/snesgfx.txt
 use std::slice::Chunks;
+use std::iter::Map;
 
 pub struct Bitplanes<'a> {
     chunks: Chunks<'a, u8>,
 }
 
 impl<'a> Iterator for Bitplanes<'a> {
-    type Item = Vec<u8>;
+    type Item = [u8; 64];
 
     fn next(&mut self) -> Option<Self::Item> {
         self.chunks.next()
             .map(|chunk| {
                 let (planes01, planes23) = chunk.split_at(16);
-                let mut result = Vec::with_capacity(64);
+                let mut result = [0; 64];
+                let mut cursor = 0;
                 for (bytes01, bytes23) in planes01.chunks(2).zip(planes23.chunks(2)) {
                     for n in (0..8).rev() {
                         let mask = 1 << n;
@@ -33,11 +35,17 @@ impl<'a> Iterator for Bitplanes<'a> {
                         if bytes01[0] & mask > 0 {
                             px += 1;
                         }
-                        result.push(px);
+                        // result.push(px);
+                        result[cursor] = px;
+                        cursor += 1;
                     }
                 }
                 result
             })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.chunks.size_hint()
     }
 }
 

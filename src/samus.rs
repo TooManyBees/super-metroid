@@ -97,7 +97,7 @@ pub fn lookup_frame_data(rom: &[u8], frame_gfx: &[u8]) -> Vec<(DmaEntry, DmaEntr
 }
 
 static HALF_ROW: usize = 0x0100;
-pub fn generate_graphics(rom: &[u8], top_frame: DmaEntry, bottom_frame: DmaEntry) -> Vec<Vec<u8>> {
+pub fn generate_graphics(rom: &[u8], top_frame: DmaEntry, bottom_frame: DmaEntry) -> Vec<[u8; 64]> {
     debug_assert!(top_frame.1 <= HALF_ROW);
     debug_assert!(top_frame.2 <= HALF_ROW);
     debug_assert!(bottom_frame.1 <= HALF_ROW);
@@ -123,10 +123,10 @@ pub fn generate_graphics(rom: &[u8], top_frame: DmaEntry, bottom_frame: DmaEntry
     32 -> 64
     */
 
-    let top_part1_padding = (0..((HALF_ROW - top_frame.1) / 32)).map(|_| vec![0; 64]);
-    let top_part2_padding = (0..((HALF_ROW - top_frame.2) / 32)).map(|_| vec![0; 64]);
-    let bottom_part1_padding = (0..((HALF_ROW - bottom_frame.1) / 32)).map(|_| vec![0; 64]);
-    let bottom_part2_padding = (0..((HALF_ROW - bottom_frame.2) / 32)).map(|_| vec![0; 64]);
+    let top_part1_padding = (0..((HALF_ROW - top_frame.1) / 32)).map(|_| [0; 64]);
+    let top_part2_padding = (0..((HALF_ROW - top_frame.2) / 32)).map(|_| [0; 64]);
+    let bottom_part1_padding = (0..((HALF_ROW - bottom_frame.1) / 32)).map(|_| [0; 64]);
+    let bottom_part2_padding = (0..((HALF_ROW - bottom_frame.2) / 32)).map(|_| [0; 64]);
 
 
     Bitplanes::new(&rom[top_frame.0..top_frame.0 + top_frame.1])

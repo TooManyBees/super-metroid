@@ -1,3 +1,5 @@
+// http://old.metroidconstruction.com/docs/framedelays.TXT
+
 use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
 use centered_canvas::CenteredCanvas;
@@ -60,8 +62,6 @@ impl<'a> DNA<'a> {
     fn frame_parts(&self, snes_addr: u16) -> Vec<FramePart> {
         let addr = snespc(self.mb, snes_addr);
         let num_parts = LittleEndian::read_u16(&self.rom[addr..addr+2]) as usize;
-        // print_hex(&self.rom[addr..addr+2+5*num_parts]);
-        // print_hex(&self.rom[addr+2+5*num_parts..addr+2+5*num_parts+50]);
         self.rom[addr+2..addr+2+5*num_parts]
             .chunks(5)
             .map(|slice| FramePart {
@@ -87,7 +87,7 @@ impl<'a> DNA<'a> {
             .collect()
     }
 
-    pub fn graphics(&self) -> Vec<Vec<u8>> {
+    pub fn graphics(&self) -> Vec<[u8; 64]> {
         let addr = snespc2(self.graphadr);
         let data = &self.rom[addr..addr + self.sizeb as usize];
         Bitplanes::new(data).collect()
@@ -195,7 +195,7 @@ impl Frame {
         (-left as u16, -top as u16, (right - left) as u16, (bottom - top) as u16)
     }
 
-    pub fn composited(&self, tiles: &[Vec<u8>]) -> CompositedFrame {
+    pub fn composited(&self, tiles: &[[u8; 64]]) -> CompositedFrame {
         let (zx, zy, width, height) = self.dimensions();
 
         let mut canvas = CenteredCanvas::new(width, height, (zx, zy));
