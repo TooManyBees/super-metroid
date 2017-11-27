@@ -13,10 +13,10 @@ mod samus;
 mod frame_map;
 
 use enemy::DNA;
-use sprite::Sprite;
+use sprite::{Sprite, SpriteView};
 use write_gif::write_sprite_to_gif;
 use byteorder::{ByteOrder, LittleEndian};
-use util::{bgr555_rgbf32, bgr555_rgb888, print_hex, zip3};
+use util::{bgr555_rgbf32, print_hex, zip3};
 use std::{env, thread, time, process};
 
 use frame_map::FrameMap;
@@ -30,13 +30,7 @@ const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,J
 //     (0..ROM.len()).find(|i| &ROM[*i..*i+len] == slice)
 // }
 
-fn render_samus(mut sprite: Sprite) {
-    let p = 0xD9400; // lol trolled, not a snes address. There goes 1 day... :/
-    let rgb_palette: Vec<_> = ROM[p..p+32]
-        .chunks(2)
-        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))
-        .collect();
-
+fn render_animation(sprite: Sprite) {
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
     let mut window: PistonWindow =WindowSettings::new("samus",
@@ -46,18 +40,20 @@ fn render_samus(mut sprite: Sprite) {
             .vsync(true)
             .build()
             .unwrap();
+    let palette = sprite.palettef32();
+    let mut spriteview = SpriteView::new(&sprite);
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
             if let Some(_) = event.render_args() {
                 clear([0.0; 4], graphics);
 
-                let ref composite = sprite.frame();
+                let ref composite = spriteview.frame();
                 for (i, p) in composite.buffer.iter().enumerate() {
                     if *p == 0 {
                         continue;
                     }
                     let (px, py) = (i % composite.width as usize, i / composite.width as usize);
-                    let (r, g, b) = rgb_palette[*p as usize];
+                    let (r, g, b) = palette[*p as usize];
                     rectangle(
                         [r, g, b, 1.0],
                         [(px * zoom) as f64, (py * zoom) as f64, zoom as f64, zoom as f64],
@@ -72,18 +68,11 @@ fn render_samus(mut sprite: Sprite) {
     }
 }
 
-fn render_sprite_sheet(creature: DNA) {
-    let rgb_palette: Vec<_> = creature.palette()
-        .chunks(2)
-        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))   
-        .collect();
-
-    let tiles = creature.graphics();
-
+fn render_tile_map(tiles: Vec<[u8; 64]>, palette: Vec<u16>) {
+    let palette: Vec<_> = palette.iter().map(bgr555_rgbf32).collect();
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
-    let mut window: PistonWindow = WindowSettings::new(
-        creature.name().unwrap_or("?".to_string()),
+    let mut window: PistonWindow = WindowSettings::new("creature",
         [128 * zoom as u32, (tiles.len()* zoom / 2) as u32])
             .exit_on_esc(true)
             .opengl(opengl)
@@ -99,7 +88,7 @@ fn render_sprite_sheet(creature: DNA) {
                 for (i, tile) in tiles.iter().enumerate() {
                     let (tile_x, tile_y) = (i % 16, i / 16);
                     for (j, index) in tile.iter().enumerate() {
-                        let (r, g, b) = rgb_palette[*index as usize];
+                        let (r, g, b) = palette[*index as usize];
                         let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
                         rectangle(
                             [r, g, b, 1.0],
@@ -112,65 +101,6 @@ fn render_sprite_sheet(creature: DNA) {
             }
         });
     }
-}
-
-fn render_animation(creature: DNA, num_frames: usize) {
-    let rgb_palette: Vec<_> = creature.palette()
-        .chunks(2)
-        .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))   
-        .collect();
-
-    let tiles = creature.graphics();
-    let frames: Vec<_> = creature.frames(num_frames).iter().map(|f| f.composited(&tiles)).collect();
-    let mut sprite = Sprite::new(frames);
-
-    let opengl = OpenGL::V3_2;
-    let zoom = 2usize;
-    let mut window: PistonWindow =WindowSettings::new(
-        creature.name().unwrap_or("?".to_string()),
-        [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
-            .exit_on_esc(true)
-            .opengl(opengl)
-            .vsync(true)
-            .build()
-            .unwrap();
-    while let Some(event) = window.next() {
-        window.draw_2d(&event, |context, graphics| {
-            if let Some(_) = event.render_args() {
-                clear([0.0; 4], graphics);
-
-                let ref composite = sprite.frame();
-                for (i, p) in composite.buffer.iter().enumerate() {
-                    if *p == 0 {
-                        continue;
-                    }
-                    let (px, py) = (i % composite.width as usize, i / composite.width as usize);
-                    let (r, g, b) = rgb_palette[*p as usize];
-                    rectangle(
-                        [r, g, b, 1.0],
-                        [(px * zoom) as f64, (py * zoom) as f64, zoom as f64, zoom as f64],
-                        context.transform,
-                        graphics,
-                    )
-                }
-                let duration = time::Duration::from_millis(composite.duration as u64);
-                thread::sleep(duration);
-            }
-        });
-    }
-}
-
-#[allow(unused)]
-fn render_gif(creature: DNA, num_frames: usize) {
-    let rgb_palette: Vec<_> = creature.palette()
-        .chunks(2)
-        .map(|bgr| bgr555_rgb888(LittleEndian::read_u16(bgr)))
-        .collect();
-
-    let tiles = creature.graphics();
-    let frames: Vec<_> = creature.frames(num_frames).iter().map(|f| f.composited(&tiles)).collect();
-
-    write_sprite_to_gif(&creature.name().unwrap_or("enemy".to_string()), &frames, &rgb_palette);
 }
 
 struct Action {
@@ -214,75 +144,6 @@ static HELP_STRING: &'static str =
 fn main() {
     use Subject::*;
     use Format::*;
-
-    // let pose = (0x49, 6);
-
-    // let durations = samus::lookup_frame_durations(&ROM, pose.0, pose.1);
-
-    // let tile_sets = samus::graphics(&ROM, pose.0, pose.1);
-    // let frames: Vec<_> = zip3(samus::tilemaps(&ROM, pose.0, pose.1), tile_sets, durations)
-    //     .map(|(fs, ts, d)| FrameMap::composite(&fs, &ts, *d as u16)).collect();
-    // let mut sprite = Sprite::new(frames);
-
-    // use util::snespc2;
-
-    // let p = 0xD9400; // lol trolled, not a snes address. There goes 1 day... :/
-    // let rgb_palette: Vec<_> = ROM[p..p+32]
-    //     .chunks(2)
-    //     .map(|bgr| bgr555_rgbf32(LittleEndian::read_u16(bgr)))
-    //     .collect();
-
-    // let opengl = OpenGL::V3_2;
-    // let zoom = 4usize;
-    // let mut window: PistonWindow = WindowSettings::new("hi there",
-    //     // [128 * zoom as u32, 128 * zoom as u32])
-    //     [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
-    //         .exit_on_esc(true)
-    //         .opengl(opengl)
-    //         .vsync(true)
-    //         .build()
-    //         .unwrap();
-
-    // while let Some(event) = window.next() {
-    //     window.draw_2d(&event, |context, graphics| {
-    //         if let Some(_) = event.render_args() {
-    //             clear([0.0; 4], graphics);
-
-    //             // for (i, tile) in tiles.iter().enumerate() {
-    //             //     let (tile_x, tile_y) = (i % 16, i / 16);
-    //             //     for (j, index) in tile.iter().enumerate() {
-    //             //         let (r, g, b) = rgb_palette[*index as usize];
-    //             //         let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
-    //             //         rectangle(
-    //             //             [r, g, b, 1.0],
-    //             //             [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
-    //             //             context.transform,
-    //             //             graphics
-    //             //         );
-    //             //     }
-    //             // }
-
-    //             let composite = sprite.frame();
-    //             for (i, p) in composite.buffer.iter().enumerate() {
-    //                 if *p == 0 {
-    //                     continue;
-    //                 }
-    //                 let (px, py) = (i % composite.width as usize, i / composite.width as usize);
-    //                 let (r, g, b) = rgb_palette[*p as usize];
-    //                 rectangle(
-    //                     [r, g, b, 1.0],
-    //                     [(px * zoom) as f64, (py * zoom) as f64, zoom as f64, zoom as f64],
-    //                     context.transform,
-    //                     graphics,
-    //                 )
-    //             }
-    //             let duration = time::Duration::from_millis(composite.duration as u64);
-    //             thread::sleep(duration);
-    //         }
-    //     });
-    // }
-
-
 
     if env::args().count() <= 1 {
         eprintln!("Usage: {} {}", env::args().nth(0).unwrap_or("programname".to_string()), HELP_STRING);
@@ -335,15 +196,38 @@ fn main() {
             let tile_sets = samus::graphics(&ROM, addr as usize, action.frames);
             let frames: Vec<_> = zip3(samus::tilemaps(&ROM, addr as usize, action.frames), tile_sets, durations)
                 .map(|(fs, ts, d)| FrameMap::composite(&fs, &ts, *d as u16)).collect();
-            let sprite = Sprite::new(frames);
-            render_samus(sprite);
+            let p = 0xD9400; // lol trolled, not a snes address. There goes 1 day... :/
+            let palette: Vec<_> = ROM[p..p+32]
+                .chunks(2)
+                .map(LittleEndian::read_u16)
+                .collect();
+            let sprite = Sprite::new(frames, palette);
+            render_animation(sprite);
         },
         (Some(Enemy), Some(addr)) => {
             let creature = DNA::read_from_rom(&ROM, addr);
+            let palette: Vec<_> = creature.palette().chunks(2)
+                .map(LittleEndian::read_u16).collect();
+            let tiles = creature.graphics();
+
             match action.format {
-                Spritesheet => render_sprite_sheet(creature),
-                Animate => render_animation(creature, action.frames),
-                Gif => render_gif(creature, action.frames),
+                Spritesheet => {
+                    render_tile_map(tiles, palette);
+                },
+                Animate => {
+                    let frames: Vec<_> = creature.frames(action.frames).iter().map(|f| f.composited(&tiles)).collect();
+                    let sprite = Sprite::new(frames, palette);
+                    render_animation(sprite);
+                },
+                Gif => {
+                    let frames: Vec<_> = creature.frames(action.frames).iter().map(|f| f.composited(&tiles)).collect();
+                    let sprite = Sprite::new(frames, palette);
+                    write_sprite_to_gif(
+                        &creature.name().unwrap_or("enemy".to_string()),
+                        sprite.frames(),
+                        &sprite.palette888()
+                    );
+                },
             }
         },
         _ => {

@@ -40,21 +40,21 @@ pub fn print_hex(arr: &[u8]) {
 pub type RGBu8 = (u8, u8, u8);
 pub type RGBf32 = (f32, f32, f32);
 
-pub fn bgr555_rgb888(bgr: u16) -> RGBu8 {
+pub fn bgr555_rgb888(bgr: &u16) -> RGBu8 {
     let r = (bgr & 0b11111) * 8;
     let g = ((bgr & 0b1111100000) >> 5) * 8;
     let b = ((bgr & 0b111110000000000) >> 10) * 8;
     (r as u8, g as u8, b as u8)
 }
 
-pub fn bgr555_rgbf32(bgr: u16) -> RGBf32 {
+pub fn bgr555_rgbf32(bgr: &u16) -> RGBf32 {
     let r = (bgr & 0b11111) as f32 / 31.0;
     let g = ((bgr & 0b1111100000) >> 5) as f32 / 31.0;
     let b = ((bgr & 0b111110000000000) >> 10) as f32 / 31.0;
     (r, g, b)
 }
 
-pub fn bgr555_rgb565(bgr: u16) -> u16 {
+pub fn bgr555_rgb565(bgr: &u16) -> u16 {
     // Used by some oled screens
     let r = (bgr & 0b11111) << 11;
     let g = ((bgr & 0b1111100000) >> 5) << 6;
