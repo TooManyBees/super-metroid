@@ -7,6 +7,8 @@
 
 // https://www.smwcentral.net/?p=viewthread&t=13167
 
+use std::cmp;
+
 #[inline(always)]
 pub fn snespc(bank: u8, addr: u16) -> usize {
     (((bank & 127) as usize) << 15) + (addr as usize) - 512 - 32256
@@ -58,4 +60,53 @@ pub fn bgr555_rgb565(bgr: u16) -> u16 {
     let g = ((bgr & 0b1111100000) >> 5) << 6;
     let b = (bgr & 0b111110000000000) >> 10;
     r | g | b
+}
+
+pub struct Zip3<T, U, V> {
+    t: T,
+    u: U,
+    v: V,
+}
+
+impl<T, U, V> Iterator for Zip3<T, U, V>
+    where T: Iterator, U: Iterator, V: Iterator {
+    type Item = (T::Item, U::Item, V::Item);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        self.t.next().and_then(|t| {
+            self.u.next().and_then(|u| {
+                self.v.next().and_then(|v| {
+                    Some((t, u, v))
+                })
+            })
+        })
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (t_l, t_u) = self.t.size_hint();
+        let (u_l, u_u) = self.u.size_hint();
+        let (v_l, v_u) = self.v.size_hint();
+
+        let lower = cmp::min(cmp::min(t_l, u_l), v_l);
+
+        let upper = match (t_u, u_u, v_u) {
+            (Some(x), Some(y), Some(z)) => Some(cmp::min(cmp::min(x, y), z)),
+            (Some(x), Some(y),    None) => Some(cmp::min(x, y)),
+            (Some(x),    None, Some(z)) => Some(cmp::min(x, z)),
+            (   None, Some(y), Some(z)) => Some(cmp::min(y, z)),
+            (Some(x),    None,    None) => Some(x),
+            (   None, Some(y),    None) => Some(y),
+            (   None,    None, Some(z)) => Some(z),
+            (   None,    None,    None) => None,
+        };
+
+        (lower, upper)
+    }
+}
+
+pub fn zip3<T, U, V>(t: T, u: U, v: V) -> Zip3<T::IntoIter, U::IntoIter, V::IntoIter>
+    where T: IntoIterator, U: IntoIterator, V: IntoIterator {
+    Zip3 { t: t.into_iter(), u: u.into_iter(), v: v.into_iter() }
 }
