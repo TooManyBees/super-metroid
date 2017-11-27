@@ -21,23 +21,6 @@ impl Sprite {
         }
     }
 
-    pub fn new_single(tiles: Vec<[u8; 64]>, palette: Vec<u16>) -> Self {
-        let mut buffer = Vec::with_capacity(tiles.len() * 64);
-        for tile in tiles.iter() {
-            buffer.extend_from_slice(tile);
-        }
-        let frame = CompositedFrame {
-            buffer: buffer,
-            width: 128,
-            height: tiles.len() as u16 / 16 * 8,
-            duration: 10,
-        };
-        Sprite {
-            frames: vec![frame],
-            palette: palette,
-        }
-    }
-
     pub fn width(&self) -> u16 {
         self.frames.iter().fold(0, |width, f| cmp::max(width, f.width))
     }

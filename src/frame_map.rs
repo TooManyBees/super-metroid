@@ -21,11 +21,7 @@ impl FrameMap {
 
     #[inline(always)]
     pub fn x(&self) -> i16 {
-        // if self.priority_a & 0x01 > 0 {
-        //     self.x as i16 + 0xFF
-        // } else {
-            self.x as i16
-        // }
+        self.x as i16
     }
 
     #[inline(always)]
