@@ -4,7 +4,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(frames: Vec<CompositedFrame>) -> Self{
+    pub fn new(frames: Vec<CompositedFrame>) -> Self {
         Sprite {
             frames: frames,
             index: 0,
