@@ -13,7 +13,7 @@ use enemy::DNA;
 use sprite::Sprite;
 use write_gif::write_sprite_to_gif;
 use byteorder::{ByteOrder, LittleEndian};
-use util::{bgr555_rgbf32, bgr555_rgb888};
+use util::{bgr555_rgbf32, bgr555_rgb888, print_hex, zip3};
 use std::{env, thread, time, process};
 
 use piston_window::*;
@@ -42,22 +42,23 @@ fn render_sprite_sheet(creature: DNA) {
 
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
-            clear([0.0; 4], graphics);
+            if let Some(_) = event.render_args() {
+                clear([0.0; 4], graphics);
 
-            for (i, tile) in tiles.iter().enumerate() {
-                let (tile_x, tile_y) = (i % 16, i / 16);
-                for (j, index) in tile.iter().enumerate() {
-                    let (r, g, b) = rgb_palette[*index as usize];
-                    let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
-                    rectangle(
-                        [r, g, b, 1.0],
-                        [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
-                        context.transform,
-                        graphics
-                    );
+                for (i, tile) in tiles.iter().enumerate() {
+                    let (tile_x, tile_y) = (i % 16, i / 16);
+                    for (j, index) in tile.iter().enumerate() {
+                        let (r, g, b) = rgb_palette[*index as usize];
+                        let (x, y) = (tile_x * 8 + j % 8, tile_y * 8 + j / 8);
+                        rectangle(
+                            [r, g, b, 1.0],
+                            [(x * zoom) as f64, (y * zoom) as f64, zoom as f64, zoom as f64],
+                            context.transform,
+                            graphics
+                        );
+                    }
                 }
             }
-
         });
     }
 }
@@ -85,24 +86,26 @@ fn render_animation(creature: DNA, num_frames: usize) {
             .unwrap();
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
-            clear([0.0; 4], graphics);
+            if let Some(_) = event.render_args() {
+                clear([0.0; 4], graphics);
 
-            let ref composite = sprite.frame();
-            for (i, p) in composite.buffer.iter().enumerate() {
-                if *p == 0 {
-                    continue;
+                let ref composite = sprite.frame();
+                for (i, p) in composite.buffer.iter().enumerate() {
+                    if *p == 0 {
+                        continue;
+                    }
+                    let (px, py) = (i % composite.width as usize, i / composite.width as usize);
+                    let (r, g, b) = rgb_palette[*p as usize];
+                    rectangle(
+                        [r, g, b, 1.0],
+                        [(px * zoom) as f64, (py * zoom) as f64, zoom as f64, zoom as f64],
+                        context.transform,
+                        graphics,
+                    )
                 }
-                let (px, py) = (i % composite.width as usize, i / composite.width as usize);
-                let (r, g, b) = rgb_palette[*p as usize];
-                rectangle(
-                    [r, g, b, 1.0],
-                    [(px * zoom) as f64, (py * zoom) as f64, zoom as f64, zoom as f64],
-                    context.transform,
-                    graphics,
-                )
+                let duration = time::Duration::from_millis(composite.duration as u64);
+                thread::sleep(duration);
             }
-            let duration = time::Duration::from_millis(composite.duration as u64 * 16);
-            thread::sleep(duration);
         });
     }
 }
