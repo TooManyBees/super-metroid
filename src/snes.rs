@@ -1,5 +1,16 @@
-use util::snespc2;
 use std::ops::{Add, Index, RangeFrom};
+
+// #[inline(always)]
+// pub fn snespc(bank: u8, addr: u16) -> PcAddress {
+//     PcAddress(
+//         (((bank & 127) as usize) << 15) + (addr as usize) - 512 - 32256
+//     )
+// }
+
+#[inline(always)]
+pub fn snespc(addr: u32) -> usize {
+    (((addr & 0x7F0000) >> 1) + (addr & 0xFFFF)) as usize - 512 - 32256
+}
 
 // FIXME: when `const fn` feature lands,
 // remove `pub` from the element
@@ -44,13 +55,12 @@ pub struct SnesAddress(pub u32);
 
 impl SnesAddress {
     pub fn to_pc(&self) -> PcAddress {
-        snespc2(self.0)
+        PcAddress(snespc(self.0))
     }
 }
 
-impl Add<usize> for SnesAddress {
-    type Output = PcAddress;
-    fn add(self, rhs: usize) -> Self::Output {
-        snespc2(self.0) + rhs
+impl Into<PcAddress> for SnesAddress {
+    fn into(self) -> PcAddress {
+        PcAddress(snespc(self.0))
     }
 }

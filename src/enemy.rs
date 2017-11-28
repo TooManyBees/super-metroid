@@ -1,33 +1,33 @@
 // http://old.metroidconstruction.com/docs/framedelays.TXT
 
-use snes::{Rom};
+use snes::{Rom, SnesAddress};
 use std::{fmt};
 use byteorder::{ByteOrder, LittleEndian};
 use frame_map::FrameMap;
 use sprite::CompositedFrame;
 use bitplanes::Bitplanes;
 #[allow(unused_imports)]
-use util::{snespc, snespc2, snes_string, print_hex};
+use util::{snes_string, print_hex};
 
 pub struct DNA<'a> {
+    palet: u32,
+    graphadr: u32,
+    mb: u32,
     sizeb: u16,
-    palet: u16,
     piece: u16,
     ename: u16,
-    graphadr: u32,
     rom: &'a Rom<'a>,
-    mb: u8,
 }
 
 impl<'a> DNA<'a> {
-    pub fn read_from_rom(rom: &'a Rom, snes_addr: u32) -> Self {
-        let addr = snespc2(snes_addr);
+    pub fn read_from_rom(rom: &'a Rom, snes_addr: SnesAddress) -> Self {
+        let addr = snes_addr.to_pc();
         let dna = &rom.read(addr, 64);
 
         DNA {
             sizeb: LittleEndian::read_u16(&dna[0..2]),
-            palet: LittleEndian::read_u16(&dna[2..4]),
-            mb: dna[12],
+            palet: LittleEndian::read_u16(&dna[2..4]) as u32,
+            mb: (dna[12] as u32) << 16,
             piece: LittleEndian::read_u16(&dna[20..22]),
             graphadr: LittleEndian::read_u32(&dna[54..58]) & 0x00FFFFFF,
             ename: LittleEndian::read_u16(&dna[62..64]),
@@ -36,17 +36,17 @@ impl<'a> DNA<'a> {
     }
 
     pub fn name(&self) -> Option<String> {
-        let addr = snespc(0x34, self.ename);
+        let addr = SnesAddress((0x34 << 16) + self.ename as u32).to_pc();
         snes_string(self.rom, addr)
     }
 
     pub fn palette(&self) -> &[u8] {
-        let addr = snespc(self.mb, self.palet);
+        let addr = SnesAddress(self.mb + self.palet).to_pc();
         &self.rom.read(addr, 32)
     }
 
     fn frame_indices(&self, n: usize) -> Vec<FrameIndex> {
-        let addr = snespc(self.mb, self.palet) + 0x20;
+        let addr = SnesAddress(self.mb + self.palet).to_pc() + 0x20;
         self.rom.read(addr, n * 4)
             .chunks(4)
             .map(|slice| {
@@ -67,17 +67,17 @@ impl<'a> DNA<'a> {
         let indices = self.frame_indices(n);
         indices.into_iter()
             .map(|fi| {
-                let full_addr = ((self.mb as u32) << 16) + fi.snes_addr as u32;
+                let full_addr = SnesAddress(self.mb + fi.snes_addr as u32);
                 Frame {
                     duration: fi.duration,
-                    parts: FrameMap::from_rom(self.rom, full_addr as u32, 0),
+                    parts: FrameMap::from_rom(self.rom, full_addr, 0),
                 }
             })
             .collect()
     }
 
     pub fn graphics(&self) -> Vec<[u8; 64]> {
-        let addr = snespc2(self.graphadr);
+        let addr = SnesAddress(self.graphadr).to_pc();
         let data = &self.rom.read(addr, self.sizeb as usize);
         Bitplanes::new(data).collect()
     }

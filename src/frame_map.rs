@@ -1,9 +1,8 @@
-use snes::{Rom};
+use snes::{Rom, SnesAddress};
 use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
 use centered_canvas::CenteredCanvas;
 use sprite::CompositedFrame;
-use util::snespc2;
 
 #[derive(Clone)]
 pub struct FrameMap {
@@ -40,9 +39,9 @@ impl FrameMap {
         self.priority_b & (1 << 7) > 0
     }
 
-    pub fn from_rom(rom: &Rom, snes_addr: u32, offset: usize) -> Vec<Self> {
+    pub fn from_rom(rom: &Rom, snes_addr: SnesAddress, offset: usize) -> Vec<Self> {
         // println!("snes addr: {:X}, offset: {:X}", snes_addr, offset);
-        let addr = snespc2(snes_addr) + offset;
+        let addr = snes_addr.to_pc() + offset;
         let num_parts = LittleEndian::read_u16(&rom.read(addr, 2)) as usize;
         rom.read(addr+2, 5*num_parts)
             .chunks(5)

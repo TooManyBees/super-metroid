@@ -13,7 +13,7 @@ mod snes;
 mod samus;
 mod frame_map;
 
-use snes::{Rom, PcAddress};
+use snes::{Rom, PcAddress, SnesAddress};
 use enemy::DNA;
 use sprite::{Sprite, SpriteView};
 use write_gif::write_sprite_to_gif;
@@ -203,7 +203,7 @@ fn main() {
             render_animation(sprite);
         },
         (Some(Enemy), Some(addr)) => {
-            let creature = DNA::read_from_rom(&ROM, addr);
+            let creature = DNA::read_from_rom(&ROM, SnesAddress(addr));
             let palette: Vec<_> = creature.palette().chunks(2)
                 .map(LittleEndian::read_u16).collect();
             let tiles = creature.graphics();

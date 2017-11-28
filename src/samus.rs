@@ -1,24 +1,30 @@
 // http://metroidconstruction.com/SMMM/samus_animations.txt
 
-use snes::{Rom, PcAddress};
+use snes::{Rom, PcAddress, SnesAddress};
 use byteorder::{ByteOrder, LittleEndian};
 use bitplanes::Bitplanes;
 use frame_map::FrameMap;
-use util::{snespc2, print_hex};
+use util::print_hex;
 
-const BASE_TABLES_POINTER: u32 = 0x92808D;
-const BOTTOM_HALF_POINTERS: u32 = 0x92945D;
-const TOP_HALF_POINTERS: u32 = 0x929263;
+enum Palette {
+    PowerSuit = 0xD9400,
+    VariaSuit = 0xD9520,
+    GravitySuit = 0xD9800,
+}
 
-const FRAME_MAP_START: u32 = 0x918000;
+const BASE_TABLES_POINTER: SnesAddress = SnesAddress(0x92808D);
+const BOTTOM_HALF_POINTERS: SnesAddress = SnesAddress(0x92945D);
+const TOP_HALF_POINTERS: SnesAddress = SnesAddress(0x929263);
 
-const FRAME_PROGRESSION_TABLE_LOOKUP: u32 = 0x92D94E;
-const FRAME_PROGRESSION_TABLES: u32 = 0x920000;
+const FRAME_MAP_START: SnesAddress = SnesAddress(0x918000);
 
-const FRAME_DURATION_TABLE: u32 = 0x91B010;
+const FRAME_PROGRESSION_TABLE_LOOKUP: SnesAddress = SnesAddress(0x92D94E);
+const FRAME_PROGRESSION_TABLES: SnesAddress = SnesAddress(0x920000);
 
-const TOP_DMA_LOOKUP: u32 = 0x92D91E;
-const BOTTOM_DMA_LOOKUP: u32 = 0x92D938;
+const FRAME_DURATION_TABLE: SnesAddress = SnesAddress(0x91B010);
+
+const TOP_DMA_LOOKUP: SnesAddress = SnesAddress(0x92D91E);
+const BOTTOM_DMA_LOOKUP: SnesAddress = SnesAddress(0x92D938);
 
 pub fn tilemaps(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<FrameMap>> {
     let (bottom_pointers, top_pointers) = lookup_tilemap_table(rom, state, num_frames);
@@ -40,23 +46,23 @@ pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>
 }
 
 pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> &'a [u8] {
-    let addr = snespc2(FRAME_DURATION_TABLE) + state * 2;
+    let addr = FRAME_DURATION_TABLE.to_pc() + state * 2;
     &rom.read(addr, num_frames)
 }
 
 fn lookup_tilemap_table<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> (&'a [u8], &'a [u8]) {
-    let bottom_half = snespc2(BOTTOM_HALF_POINTERS) + state * 2;
-    let top_half = snespc2(TOP_HALF_POINTERS) + state * 2;
-    let base_addr = snespc2(BASE_TABLES_POINTER);
+    let bottom_half = BOTTOM_HALF_POINTERS.to_pc() + state * 2;
+    let top_half = TOP_HALF_POINTERS.to_pc() + state * 2;
+    let base_addr = BASE_TABLES_POINTER.to_pc();
     let b = base_addr + LittleEndian::read_u16(&rom.read(bottom_half, 2)) as usize * 2;
     let t = base_addr + LittleEndian::read_u16(&rom.read(top_half, 2)) as usize * 2;
     (&rom.read(b, num_frames * 2), &rom.read(t, num_frames * 2))
 }
 
 fn lookup_frame_dma_pointers<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> &'a [u8] {
-    let lookup_addr = snespc2(FRAME_PROGRESSION_TABLE_LOOKUP) + state * 2;
+    let lookup_addr = FRAME_PROGRESSION_TABLE_LOOKUP.to_pc() + state * 2;
     let offset = LittleEndian::read_u16(&rom.read(lookup_addr, 2)) as usize;
-    let addr = snespc2(FRAME_PROGRESSION_TABLES) + offset;
+    let addr = FRAME_PROGRESSION_TABLES.to_pc() + offset;
     &rom.read(addr, num_frames * 4)
 }
 
@@ -64,11 +70,11 @@ type DmaEntry = (PcAddress, usize, usize);
 
 fn read_dma(rom: &Rom, table_pointer: PcAddress, entry: u8) -> DmaEntry {
     let dma_offset = LittleEndian::read_u16(&rom.read(table_pointer, 2)) as usize;
-    let entry_offset = snespc2(FRAME_PROGRESSION_TABLES) + dma_offset + entry as usize * 7;
+    let entry_offset = FRAME_PROGRESSION_TABLES.to_pc() + dma_offset + entry as usize * 7;
     let slice = &rom.read(entry_offset, 7);
     // It's really a 24-bit LE number in 3 bytes
     let snes_graphics_addr = LittleEndian::read_u32(&slice[0..4]) & 0x00FFFFFF;
-    let graphics_addr = snespc2(snes_graphics_addr);
+    let graphics_addr = SnesAddress(snes_graphics_addr).to_pc();
     let part_1_bytes = LittleEndian::read_u16(&slice[3..5]) as usize;
     let part_2_bytes = LittleEndian::read_u16(&slice[5..7]) as usize;
     // println!("({:06X}, {:04X}, {:04X})", snes_graphics_addr, part_1_bytes, part_2_bytes);
@@ -78,14 +84,14 @@ fn read_dma(rom: &Rom, table_pointer: PcAddress, entry: u8) -> DmaEntry {
 fn read_top_dma(rom: &Rom, index: u8, entry: u8) -> DmaEntry {
     assert!(index <= 0xC, "Frame's top DMA table exceeds 0x0C");
     // println!("Top DMA lookup: {} {}", index, entry);
-    let base = snespc2(TOP_DMA_LOOKUP) + index as usize * 2;
+    let base = TOP_DMA_LOOKUP.to_pc() + index as usize * 2;
     read_dma(rom, base, entry)
 }
 
 fn read_bottom_dma(rom: &Rom, index: u8, entry: u8) -> DmaEntry {
     assert!(index <= 0xA, "Frame's bottom DMA table exceeds 0x0A");
     // println!("Bottom DMA lookup: {} {}", index, entry);
-    let base = snespc2(BOTTOM_DMA_LOOKUP) + index as usize * 2;
+    let base = BOTTOM_DMA_LOOKUP.to_pc() + index as usize * 2;
     read_dma(rom, base, entry)
 }
 
