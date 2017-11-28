@@ -224,7 +224,7 @@ fn main() {
                         &creature.name().unwrap_or("enemy".to_string()),
                         sprite.frames(),
                         &sprite.palette888()
-                    );
+                    ).expect("YOUR GIF DIED MISSION FAILED");
                 },
             }
         },

@@ -12,15 +12,11 @@ pub fn snespc(addr: u32) -> usize {
     (((addr & 0x7F0000) >> 1) + (addr & 0xFFFF)) as usize - 512 - 32256
 }
 
-// FIXME: when `const fn` feature lands,
-// remove `pub` from the element
+// FIXME: when `const fn` feature lands, remove `pub` from
+// the element and use a `::new` function instead
 pub struct Rom<'a>(pub &'a [u8]);
 
 impl<'a> Rom<'a> {
-    pub fn new(slice: &'a [u8]) -> Self {
-        Rom(slice)
-    }
-
     pub fn read(&self, addr: PcAddress, len: usize) -> &'a [u8] {
         &self.0[addr.0 .. addr.0 + len]
     }
