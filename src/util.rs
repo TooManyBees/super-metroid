@@ -8,18 +8,23 @@
 // https://www.smwcentral.net/?p=viewthread&t=13167
 
 use std::cmp;
+use snes::{Rom, PcAddress};
 
 #[inline(always)]
-pub fn snespc(bank: u8, addr: u16) -> usize {
-    (((bank & 127) as usize) << 15) + (addr as usize) - 512 - 32256
+pub fn snespc(bank: u8, addr: u16) -> PcAddress {
+    PcAddress(
+        (((bank & 127) as usize) << 15) + (addr as usize) - 512 - 32256
+    )
 }
 
 #[inline(always)]
-pub fn snespc2(addr: u32) -> usize {
-    (((addr & 0x7F0000) >> 1) + (addr & 0xFFFF)) as usize - 512 - 32256
+pub fn snespc2(addr: u32) -> PcAddress {
+    PcAddress(
+        (((addr & 0x7F0000) >> 1) + (addr & 0xFFFF)) as usize - 512 - 32256
+    )
 }
 
-pub fn snes_string(rom: &[u8], addr: usize) -> Option<String> {
+pub fn snes_string(rom: &Rom, addr: PcAddress) -> Option<String> {
     let mut v = Vec::new();
     for c in rom[addr..].iter().take_while(|c| **c != 0x20 && **c != 0x00) {
         v.push(*c);

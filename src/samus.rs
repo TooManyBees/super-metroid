@@ -1,5 +1,6 @@
 // http://metroidconstruction.com/SMMM/samus_animations.txt
 
+use snes::{Rom, PcAddress};
 use byteorder::{ByteOrder, LittleEndian};
 use bitplanes::Bitplanes;
 use frame_map::FrameMap;
@@ -19,7 +20,7 @@ const FRAME_DURATION_TABLE: u32 = 0x91B010;
 const TOP_DMA_LOOKUP: u32 = 0x92D91E;
 const BOTTOM_DMA_LOOKUP: u32 = 0x92D938;
 
-pub fn tilemaps(rom: &[u8], state: usize, num_frames: usize) -> Vec<Vec<FrameMap>> {
+pub fn tilemaps(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<FrameMap>> {
     let (bottom_pointers, top_pointers) = lookup_tilemap_table(rom, state, num_frames);
 
     top_pointers.chunks(2).map(LittleEndian::read_u16)
@@ -32,39 +33,39 @@ pub fn tilemaps(rom: &[u8], state: usize, num_frames: usize) -> Vec<Vec<FrameMap
     .collect()
 }
 
-pub fn graphics(rom: &[u8], state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>> {
+pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>> {
     let pointers = lookup_frame_dma_pointers(rom, state, num_frames);
     let data = lookup_graphics_data(rom, pointers);
     data.into_iter().map(|(t, b)| generate_graphics(rom, t, b)).collect()
 }
 
-pub fn lookup_frame_durations(rom: &[u8], state: usize, num_frames: usize) -> &[u8] {
+pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> &'a [u8] {
     let addr = snespc2(FRAME_DURATION_TABLE) + state * 2;
-    &rom[addr..addr + num_frames]
+    &rom.read(addr, num_frames)
 }
 
-fn lookup_tilemap_table(rom: &[u8], state: usize, num_frames: usize) -> (&[u8], &[u8]) {
+fn lookup_tilemap_table<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> (&'a [u8], &'a [u8]) {
     let bottom_half = snespc2(BOTTOM_HALF_POINTERS) + state * 2;
     let top_half = snespc2(TOP_HALF_POINTERS) + state * 2;
     let base_addr = snespc2(BASE_TABLES_POINTER);
-    let b = base_addr + LittleEndian::read_u16(&rom[bottom_half..bottom_half+2]) as usize * 2;
-    let t = base_addr + LittleEndian::read_u16(&rom[top_half..top_half+2]) as usize * 2;
-    (&rom[b..b + num_frames * 2], &rom[t..t + num_frames * 2])
+    let b = base_addr + LittleEndian::read_u16(&rom.read(bottom_half, 2)) as usize * 2;
+    let t = base_addr + LittleEndian::read_u16(&rom.read(top_half, 2)) as usize * 2;
+    (&rom.read(b, num_frames * 2), &rom.read(t, num_frames * 2))
 }
 
-fn lookup_frame_dma_pointers(rom: &[u8], state: usize, num_frames: usize) -> &[u8] {
+fn lookup_frame_dma_pointers<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> &'a [u8] {
     let lookup_addr = snespc2(FRAME_PROGRESSION_TABLE_LOOKUP) + state * 2;
-    let offset = LittleEndian::read_u16(&rom[lookup_addr..lookup_addr+2]) as usize;
+    let offset = LittleEndian::read_u16(&rom.read(lookup_addr, 2)) as usize;
     let addr = snespc2(FRAME_PROGRESSION_TABLES) + offset;
-    &rom[addr..addr + num_frames * 4]
+    &rom.read(addr, num_frames * 4)
 }
 
-type DmaEntry = (usize, usize, usize);
+type DmaEntry = (PcAddress, usize, usize);
 
-fn read_dma(rom: &[u8], table_pointer: usize, entry: u8) -> DmaEntry {
-    let dma_offset = LittleEndian::read_u16(&rom[table_pointer..table_pointer+2]) as usize;
+fn read_dma(rom: &Rom, table_pointer: PcAddress, entry: u8) -> DmaEntry {
+    let dma_offset = LittleEndian::read_u16(&rom.read(table_pointer, 2)) as usize;
     let entry_offset = snespc2(FRAME_PROGRESSION_TABLES) + dma_offset + entry as usize * 7;
-    let slice = &rom[entry_offset..entry_offset + 7];
+    let slice = &rom.read(entry_offset, 7);
     // It's really a 24-bit LE number in 3 bytes
     let snes_graphics_addr = LittleEndian::read_u32(&slice[0..4]) & 0x00FFFFFF;
     let graphics_addr = snespc2(snes_graphics_addr);
@@ -74,21 +75,21 @@ fn read_dma(rom: &[u8], table_pointer: usize, entry: u8) -> DmaEntry {
     (graphics_addr, part_1_bytes, part_2_bytes)
 }
 
-fn read_top_dma(rom: &[u8], index: u8, entry: u8) -> DmaEntry {
+fn read_top_dma(rom: &Rom, index: u8, entry: u8) -> DmaEntry {
     assert!(index <= 0xC, "Frame's top DMA table exceeds 0x0C");
     // println!("Top DMA lookup: {} {}", index, entry);
     let base = snespc2(TOP_DMA_LOOKUP) + index as usize * 2;
     read_dma(rom, base, entry)
 }
 
-fn read_bottom_dma(rom: &[u8], index: u8, entry: u8) -> DmaEntry {
+fn read_bottom_dma(rom: &Rom, index: u8, entry: u8) -> DmaEntry {
     assert!(index <= 0xA, "Frame's bottom DMA table exceeds 0x0A");
     // println!("Bottom DMA lookup: {} {}", index, entry);
     let base = snespc2(BOTTOM_DMA_LOOKUP) + index as usize * 2;
     read_dma(rom, base, entry)
 }
 
-fn lookup_graphics_data(rom: &[u8], pointer_entries: &[u8]) -> Vec<(DmaEntry, DmaEntry)> {
+fn lookup_graphics_data(rom: &Rom, pointer_entries: &[u8]) -> Vec<(DmaEntry, DmaEntry)> {
     assert!(pointer_entries.len() % 4 == 0, "Frame progression is not evenly divisible by 4 bytes");
     pointer_entries.chunks(4).map(|frame| {
         let top_dma_table = frame[0];
@@ -103,7 +104,7 @@ fn lookup_graphics_data(rom: &[u8], pointer_entries: &[u8]) -> Vec<(DmaEntry, Dm
 }
 
 static HALF_ROW: usize = 0x0100;
-fn generate_graphics(rom: &[u8], top_frame: DmaEntry, bottom_frame: DmaEntry) -> Vec<[u8; 64]> {
+fn generate_graphics(rom: &Rom, top_frame: DmaEntry, bottom_frame: DmaEntry) -> Vec<[u8; 64]> {
     debug_assert!(top_frame.1 <= HALF_ROW);
     debug_assert!(top_frame.2 <= HALF_ROW);
     debug_assert!(bottom_frame.1 <= HALF_ROW);
@@ -135,13 +136,13 @@ fn generate_graphics(rom: &[u8], top_frame: DmaEntry, bottom_frame: DmaEntry) ->
     let bottom_part2_padding = (0..((HALF_ROW - bottom_frame.2) / 32)).map(|_| [0; 64]);
 
 
-    Bitplanes::new(&rom[top_frame.0..top_frame.0 + top_frame.1])
+    Bitplanes::new(&rom.read(top_frame.0, top_frame.1))
     .chain(top_part1_padding)
-    .chain(Bitplanes::new(&rom[bottom_frame.0..bottom_frame.0 + bottom_frame.1]))
+    .chain(Bitplanes::new(&rom.read(bottom_frame.0, bottom_frame.1)))
     .chain(bottom_part1_padding)
-    .chain(Bitplanes::new(&rom[top_frame.0 + top_frame.1..top_frame.0 + top_frame.1 + top_frame.2]))
+    .chain(Bitplanes::new(&rom.read(top_frame.0 + top_frame.1, top_frame.2)))
     .chain(top_part2_padding)
-    .chain(Bitplanes::new(&rom[bottom_frame.0 + bottom_frame.1..bottom_frame.0 + bottom_frame.1 + bottom_frame.2]))
+    .chain(Bitplanes::new(&rom.read(bottom_frame.0 + bottom_frame.1, bottom_frame.2)))
     .chain(bottom_part2_padding)
     .collect()
 }

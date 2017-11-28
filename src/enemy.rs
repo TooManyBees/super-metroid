@@ -1,5 +1,6 @@
 // http://old.metroidconstruction.com/docs/framedelays.TXT
 
+use snes::{Rom};
 use std::{fmt};
 use byteorder::{ByteOrder, LittleEndian};
 use frame_map::FrameMap;
@@ -14,14 +15,14 @@ pub struct DNA<'a> {
     piece: u16,
     ename: u16,
     graphadr: u32,
-    rom: &'a [u8],
+    rom: &'a Rom<'a>,
     mb: u8,
 }
 
 impl<'a> DNA<'a> {
-    pub fn read_from_rom(rom: &'a [u8], snes_addr: u32) -> Self {
+    pub fn read_from_rom(rom: &'a Rom, snes_addr: u32) -> Self {
         let addr = snespc2(snes_addr);
-        let dna = &rom[addr..addr+64];
+        let dna = &rom.read(addr, 64);
 
         DNA {
             sizeb: LittleEndian::read_u16(&dna[0..2]),
@@ -41,12 +42,12 @@ impl<'a> DNA<'a> {
 
     pub fn palette(&self) -> &[u8] {
         let addr = snespc(self.mb, self.palet);
-        &self.rom[addr..addr + 32]
+        &self.rom.read(addr, 32)
     }
 
     fn frame_indices(&self, n: usize) -> Vec<FrameIndex> {
         let addr = snespc(self.mb, self.palet) + 0x20;
-        self.rom[addr..addr + n * 4]
+        self.rom.read(addr, n * 4)
             .chunks(4)
             .map(|slice| {
                 let duration = LittleEndian::read_u16(&slice[0..2]);
@@ -77,7 +78,7 @@ impl<'a> DNA<'a> {
 
     pub fn graphics(&self) -> Vec<[u8; 64]> {
         let addr = snespc2(self.graphadr);
-        let data = &self.rom[addr..addr + self.sizeb as usize];
+        let data = &self.rom.read(addr, self.sizeb as usize);
         Bitplanes::new(data).collect()
     }
 }

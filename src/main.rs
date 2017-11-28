@@ -9,9 +9,11 @@ mod sprite;
 mod util;
 mod write_gif;
 
+mod snes;
 mod samus;
 mod frame_map;
 
+use snes::{Rom, PcAddress};
 use enemy::DNA;
 use sprite::{Sprite, SpriteView};
 use write_gif::write_sprite_to_gif;
@@ -23,12 +25,8 @@ use frame_map::FrameMap;
 
 use piston_window::*;
 
-const ROM: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,Ja).sfc");
-
-// fn find_in_rom(slice: &[u8]) -> Option<usize> {
-//     let len = slice.len();
-//     (0..ROM.len()).find(|i| &ROM[*i..*i+len] == slice)
-// }
+const ROM_DATA: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,Ja).sfc");
+const ROM: Rom = Rom(ROM_DATA);
 
 fn render_animation(sprite: Sprite) {
     let opengl = OpenGL::V3_2;
@@ -196,8 +194,8 @@ fn main() {
             let tile_sets = samus::graphics(&ROM, addr as usize, action.frames);
             let frames: Vec<_> = zip3(samus::tilemaps(&ROM, addr as usize, action.frames), tile_sets, durations)
                 .map(|(fs, ts, d)| FrameMap::composite(&fs, &ts, *d as u16)).collect();
-            let p = 0xD9400; // lol trolled, not a snes address. There goes 1 day... :/
-            let palette: Vec<_> = ROM[p..p+32]
+            let p = PcAddress(0xD9400); // lol trolled, not a snes address. There goes 1 day... :/
+            let palette: Vec<_> = ROM.read(p, 32)
                 .chunks(2)
                 .map(LittleEndian::read_u16)
                 .collect();
