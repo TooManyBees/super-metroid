@@ -4,13 +4,7 @@ use snes::{Rom, PcAddress, SnesAddress};
 use byteorder::{ByteOrder, LittleEndian};
 use bitplanes::Bitplanes;
 use frame_map::FrameMap;
-use util::print_hex;
-
-enum Palette {
-    PowerSuit = 0xD9400,
-    VariaSuit = 0xD9520,
-    GravitySuit = 0xD9800,
-}
+// use util::print_hex;
 
 const BASE_TABLES_POINTER: SnesAddress = SnesAddress(0x92808D);
 const BOTTOM_HALF_POINTERS: SnesAddress = SnesAddress(0x92945D);

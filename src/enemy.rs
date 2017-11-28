@@ -7,7 +7,7 @@ use frame_map::FrameMap;
 use sprite::CompositedFrame;
 use bitplanes::Bitplanes;
 #[allow(unused_imports)]
-use util::{snes_string, print_hex};
+// use util::print_hex;
 
 pub struct DNA<'a> {
     palet: u32,
@@ -37,7 +37,7 @@ impl<'a> DNA<'a> {
 
     pub fn name(&self) -> Option<String> {
         let addr = SnesAddress((0x34 << 16) + self.ename as u32).to_pc();
-        snes_string(self.rom, addr)
+        self.rom.read_string(addr, 16)
     }
 
     pub fn palette(&self) -> &[u8] {

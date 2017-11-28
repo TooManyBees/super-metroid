@@ -24,6 +24,14 @@ impl<'a> Rom<'a> {
     pub fn read(&self, addr: PcAddress, len: usize) -> &'a [u8] {
         &self.0[addr.0 .. addr.0 + len]
     }
+
+    pub fn read_string(&self, addr: PcAddress, max_len: usize) -> Option<String> {
+        let mut v = Vec::new();
+        for c in self.0[addr.0.. addr.0 + max_len].iter().take_while(|c| **c != 0x20 && **c != 0x00) {
+            v.push(*c);
+        }
+        String::from_utf8(v).ok()
+    }
 }
 
 impl<'a> Index<PcAddress> for Rom<'a> {

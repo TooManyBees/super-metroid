@@ -18,7 +18,7 @@ use enemy::DNA;
 use sprite::{Sprite, SpriteView};
 use write_gif::write_sprite_to_gif;
 use byteorder::{ByteOrder, LittleEndian};
-use util::{bgr555_rgbf32, print_hex, zip3};
+use util::{bgr555_rgbf32, zip3};
 use std::{env, thread, time, process};
 
 use frame_map::FrameMap;

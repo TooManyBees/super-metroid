@@ -8,16 +8,8 @@
 // https://www.smwcentral.net/?p=viewthread&t=13167
 
 use std::cmp;
-use snes::{Rom, PcAddress};
 
-pub fn snes_string(rom: &Rom, addr: PcAddress) -> Option<String> {
-    let mut v = Vec::new();
-    for c in rom[addr..].iter().take_while(|c| **c != 0x20 && **c != 0x00) {
-        v.push(*c);
-    }
-    String::from_utf8(v).ok()
-}
-
+#[allow(dead_code)]
 pub fn print_hex(arr: &[u8]) {
     print!("[");
     for byte in arr.iter().take(arr.len() - 1) {
@@ -45,6 +37,7 @@ pub fn bgr555_rgbf32(bgr: &u16) -> RGBf32 {
     (r, g, b)
 }
 
+#[allow(dead_code)]
 pub fn bgr555_rgb565(bgr: &u16) -> u16 {
     // Used by some oled screens
     let r = (bgr & 0b11111) << 11;
