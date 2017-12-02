@@ -1,4 +1,5 @@
 use std::ops::{Add, Index, RangeFrom};
+use std::fmt;
 
 // #[inline(always)]
 // pub fn snespc(bank: u8, addr: u16) -> PcAddress {
@@ -54,6 +55,12 @@ impl Add<usize> for PcAddress {
     }
 }
 
+impl fmt::Debug for PcAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "PcAddress({:06X})", self.0)
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct SnesAddress(pub u32);
 
@@ -63,8 +70,28 @@ impl SnesAddress {
     }
 }
 
+impl Add<SnesAddress> for SnesAddress {
+    type Output = SnesAddress;
+    fn add(self, rhs: SnesAddress) -> Self::Output {
+        SnesAddress(self.0 + rhs.0)
+    }
+}
+
+impl Add<u32> for SnesAddress {
+    type Output = SnesAddress;
+    fn add(self, rhs: u32) -> Self::Output {
+        SnesAddress(self.0 + rhs)
+    }
+}
+
 impl Into<PcAddress> for SnesAddress {
     fn into(self) -> PcAddress {
         PcAddress(snespc(self.0))
+    }
+}
+
+impl fmt::Debug for SnesAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SnesAddress(${:06X})", self.0)
     }
 }

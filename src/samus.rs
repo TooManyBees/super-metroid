@@ -16,6 +16,7 @@ const FRAME_PROGRESSION_TABLE_LOOKUP: SnesAddress = SnesAddress(0x92D94E);
 const FRAME_PROGRESSION_TABLES: SnesAddress = SnesAddress(0x920000);
 
 const FRAME_DURATION_TABLE: SnesAddress = SnesAddress(0x91B010);
+const FRAME_DURATION_START: SnesAddress = SnesAddress(0x910000);
 
 const TOP_DMA_LOOKUP: SnesAddress = SnesAddress(0x92D91E);
 const BOTTOM_DMA_LOOKUP: SnesAddress = SnesAddress(0x92D938);
@@ -40,8 +41,8 @@ pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>
 }
 
 pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> &'a [u8] {
-    let addr = FRAME_DURATION_TABLE.to_pc() + state * 2;
-    &rom.read(addr, num_frames)
+    let addr = LittleEndian::read_u16(&rom.read(FRAME_DURATION_TABLE.to_pc() + state * 2, 2)) as u32;
+    &rom.read((FRAME_DURATION_START + addr).to_pc(), num_frames)
 }
 
 fn lookup_tilemap_table<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> (&'a [u8], &'a [u8]) {
