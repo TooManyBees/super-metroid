@@ -27,9 +27,14 @@ pub fn tilemaps(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<FrameMap>
     top_pointers.chunks(2).map(LittleEndian::read_u16)
     .zip(bottom_pointers.chunks(2).map(LittleEndian::read_u16))
     .map(|(addr_t, addr_b)| {
-        let mut v = FrameMap::from_rom(rom, FRAME_MAP_START, addr_t as usize);
-        v.append(&mut FrameMap::from_rom(rom, FRAME_MAP_START, addr_b as usize));
-        v
+        let mut maps = Vec::with_capacity(num_frames * 2); // Assume both top and bottom will have data
+        if addr_t != 0 {
+            maps.append(&mut FrameMap::from_rom(rom, FRAME_MAP_START, addr_t as usize));
+        };
+        if addr_b != 0 {
+            maps.append(&mut FrameMap::from_rom(rom, FRAME_MAP_START, addr_b as usize));
+        };
+        maps
     })
     .collect()
 }
@@ -40,9 +45,16 @@ pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>
     data.into_iter().map(|(t, b)| generate_graphics(rom, t, b)).collect()
 }
 
-pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> &'a [u8] {
+pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, _num_frames: usize) -> &'a [u8] {
     let addr = LittleEndian::read_u16(&rom.read(FRAME_DURATION_TABLE.to_pc() + state * 2, 2)) as u32;
-    &rom.read((FRAME_DURATION_START + addr).to_pc(), num_frames)
+    let mut len = 0;
+    for byte in &rom[(FRAME_DURATION_START + addr).to_pc()..] {
+        if *byte > 0xF0 {
+            break;
+        }
+        len += 1;
+    }
+    &rom.read((FRAME_DURATION_START + addr).to_pc(), len)
 }
 
 fn lookup_tilemap_table<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> (&'a [u8], &'a [u8]) {

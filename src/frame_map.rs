@@ -40,7 +40,7 @@ impl FrameMap {
     }
 
     pub fn from_rom(rom: &Rom, snes_addr: SnesAddress, offset: usize) -> Vec<Self> {
-        // println!("snes addr: {:X}, offset: {:X}", snes_addr, offset);
+        // println!("snes addr: {:?}, offset: {:X}", snes_addr, offset);
         let addr = snes_addr.to_pc() + offset;
         let num_parts = LittleEndian::read_u16(&rom.read(addr, 2)) as usize;
         rom.read(addr+2, 5*num_parts)

@@ -59,7 +59,7 @@ fn render_animation(sprite: Sprite) {
                         graphics,
                     )
                 }
-                let duration = time::Duration::from_millis(composite.duration as u64);
+                let duration = time::Duration::from_millis(composite.duration as u64 * 16);
                 thread::sleep(duration);
             }
         });
@@ -191,8 +191,9 @@ fn main() {
     match (action.subject, action.address) {
         (Some(Samus), Some(addr)) => {
             let durations = samus::lookup_frame_durations(&ROM, addr as usize, action.frames);
-            let tile_sets = samus::graphics(&ROM, addr as usize, action.frames);
-            let frames: Vec<_> = zip3(samus::tilemaps(&ROM, addr as usize, action.frames), tile_sets, durations)
+            let tile_maps = samus::tilemaps(&ROM, addr as usize, durations.len());
+            let tile_sets = samus::graphics(&ROM, addr as usize, durations.len());
+            let frames: Vec<_> = zip3(tile_maps, tile_sets, durations)
                 .map(|(fs, ts, d)| FrameMap::composite(&fs, &ts, *d as u16)).collect();
             let p = PcAddress(0xD9400); // lol trolled, not a snes address. There goes 1 day... :/
             let palette: Vec<_> = ROM.read(p, 32)
