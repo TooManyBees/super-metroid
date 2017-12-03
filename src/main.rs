@@ -132,11 +132,10 @@ static FLAG_STRING: &'static str =
     -g (gif)";
 
 static HELP_STRING: &'static str =
-    "[-s | -a | -g] [:n] <addr>\n\
+    "[-s | -a | -g] <addr>\n\
     -s = spritesheet, default\n\
     -a = animate\n\
     -g = gif\n\
-    n = number of frames (for animate / gif modes)\n\
     addr = SNES address in hex";
 
 fn main() {
@@ -194,7 +193,7 @@ fn main() {
             let tile_maps = samus::tilemaps(&ROM, addr as usize, durations.len());
             let tile_sets = samus::graphics(&ROM, addr as usize, durations.len());
             let frames: Vec<_> = zip3(tile_maps, tile_sets, durations)
-                .map(|(fs, ts, d)| FrameMap::composite(&fs, &ts, *d as u16)).collect();
+                .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
             let p = PcAddress(0xD9400); // lol trolled, not a snes address. There goes 1 day... :/
             let palette: Vec<_> = ROM.read(p, 32)
                 .chunks(2)

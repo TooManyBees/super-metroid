@@ -49,6 +49,14 @@ pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, _num_frames: usize
     let addr = LittleEndian::read_u16(&rom.read(FRAME_DURATION_TABLE.to_pc() + state * 2, 2)) as u32;
     let mut len = 0;
     for byte in &rom[(FRAME_DURATION_START + addr).to_pc()..] {
+        // FF = loop
+        // FE (NN) = backgrack NN frames
+        // FD (NN) = transition to pose NN (might be 2 bytes LE)
+        // FB = wall jump only ??
+        // F9 __ __ __ __ __ __ = ??
+        // F8 (NN) = transition to pose NN
+        // F6 = heavy breathing ??
+        // F0 = stop at last frame
         if *byte > 0xF0 {
             break;
         }
