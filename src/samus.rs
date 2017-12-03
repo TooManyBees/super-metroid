@@ -57,7 +57,7 @@ pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, _num_frames: usize
         // F8 (NN) = transition to pose NN
         // F6 = heavy breathing ??
         // F0 = stop at last frame
-        if *byte > 0xF0 {
+        if *byte >= 0xF0 {
             break;
         }
         len += 1;

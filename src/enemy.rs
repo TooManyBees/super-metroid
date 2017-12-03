@@ -45,10 +45,11 @@ impl<'a> DNA<'a> {
         &self.rom.read(addr, 32)
     }
 
-    fn frame_indices(&self, n: usize) -> Vec<FrameIndex> {
+    fn frame_indices(&self) -> Vec<FrameIndex> {
         let addr = SnesAddress(self.mb + self.palet).to_pc() + 0x20;
-        self.rom.read(addr, n * 4)
-            .chunks(4)
+        // Animations are followed by the ending bytes ED80 (littleendian)
+        // and the LE short address of the *start* of the animation
+        self.rom[addr..].chunks(4).take_while(|c| c[0..2] != [0xED, 0x80] && c[2..4] != [0xED, 0x80])
             .map(|slice| {
                 let duration = LittleEndian::read_u16(&slice[0..2]);
                 let addr = LittleEndian::read_u16(&slice[2..4]);
@@ -60,11 +61,8 @@ impl<'a> DNA<'a> {
             .collect()
     }
 
-    pub fn frames(&self, n: usize) -> Vec<Frame> {
-        if n == 0 {
-            return Vec::new();
-        }
-        let indices = self.frame_indices(n);
+    pub fn frames(&self) -> Vec<Frame> {
+        let indices = self.frame_indices();
         indices.into_iter()
             .map(|fi| {
                 let full_addr = SnesAddress(self.mb + fi.snes_addr as u32);

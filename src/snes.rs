@@ -1,4 +1,4 @@
-use std::ops::{Add, Index, RangeFrom};
+use std::ops::{Add, Index, Range, RangeFrom, RangeTo};
 use std::fmt;
 
 // #[inline(always)]
@@ -38,10 +38,24 @@ impl<'a> Index<PcAddress> for Rom<'a> {
     }
 }
 
+impl <'a> Index<Range<PcAddress>> for Rom<'a> {
+    type Output = [u8];
+    fn index(&self, index: Range<PcAddress>) -> &Self::Output {
+        &self.0[index.start.0..index.end.0]
+    }
+}
+
 impl<'a> Index<RangeFrom<PcAddress>> for Rom<'a> {
     type Output = [u8];
     fn index(&self, index: RangeFrom<PcAddress>) -> &Self::Output {
         &self.0[index.start.0..]
+    }
+}
+
+impl<'a> Index<RangeTo<PcAddress>> for Rom<'a> {
+    type Output = [u8];
+    fn index(&self, index: RangeTo<PcAddress>) -> &Self::Output {
+        &self.0[..index.end.0]
     }
 }
 
@@ -65,8 +79,8 @@ impl fmt::Debug for PcAddress {
 pub struct SnesAddress(pub u32);
 
 impl SnesAddress {
-    pub fn to_pc(&self) -> PcAddress {
-        PcAddress(snespc(self.0))
+    pub fn to_pc(self) -> PcAddress {
+        self.into()
     }
 }
 

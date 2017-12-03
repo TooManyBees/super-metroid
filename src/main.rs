@@ -213,12 +213,12 @@ fn main() {
                     render_tile_map(tiles, palette);
                 },
                 Animate => {
-                    let frames: Vec<_> = creature.frames(action.frames).iter().map(|f| f.composited(&tiles)).collect();
+                    let frames: Vec<_> = creature.frames().iter().map(|f| f.composited(&tiles)).collect();
                     let sprite = Sprite::new(frames, palette);
                     render_animation(sprite);
                 },
                 Gif => {
-                    let frames: Vec<_> = creature.frames(action.frames).iter().map(|f| f.composited(&tiles)).collect();
+                    let frames: Vec<_> = creature.frames().iter().map(|f| f.composited(&tiles)).collect();
                     let sprite = Sprite::new(frames, palette);
                     write_sprite_to_gif(
                         &creature.name().unwrap_or("enemy".to_string()),
