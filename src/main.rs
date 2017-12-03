@@ -203,6 +203,11 @@ fn main() {
             render_animation(sprite);
         },
         (Some(Enemy), Some(addr)) => {
+            let addr = if addr == (addr & 0xFFFF) {
+                0xA00000 | addr
+            } else {
+                addr
+            };
             let creature = DNA::read_from_rom(&ROM, SnesAddress(addr));
             let palette: Vec<_> = creature.palette().chunks(2)
                 .map(LittleEndian::read_u16).collect();
