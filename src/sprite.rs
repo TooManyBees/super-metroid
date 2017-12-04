@@ -5,6 +5,8 @@ pub struct CompositedFrame {
     pub buffer: Vec<u8>,
     pub width: u16,
     pub height: u16,
+    pub zero_x: u16,
+    pub zero_y: u16,
     pub duration: u16,
 }
 
@@ -22,11 +24,23 @@ impl Sprite {
     }
 
     pub fn width(&self) -> u16 {
-        self.frames.iter().fold(0, |width, f| cmp::max(width, f.width))
+        let (l, r) = self.frames.iter().fold((0, 0), |(l, r), f| {
+            (cmp::max(l, f.zero_x), cmp::max(r, f.width - f.zero_x)) // SHOW ME YOUR MOVES
+        });
+        l + r
     }
 
     pub fn height(&self) -> u16 {
-        self.frames.iter().fold(0, |height, f| cmp::max(height, f.height))
+        let (t, b) = self.frames.iter().fold((0, 0), |(t, b), f| {
+            (cmp::max(t, f.zero_y), cmp::max(b, f.height - f.zero_y))
+        });
+        t + b
+    }
+
+    pub fn zero(&self) -> (u16, u16) {
+        self.frames.iter().fold((0, 0), |(x, y), f| {
+            (cmp::max(x, f.zero_x), cmp::max(y, f.zero_y))
+        })
     }
 
     pub fn frames(&self) -> &[CompositedFrame] {

@@ -97,6 +97,8 @@ impl FrameMap {
             buffer: canvas.buffer,
             width: canvas.width,
             height: canvas.height,
+            zero_x: zx,
+            zero_y: zy,
             duration: duration,
         }
     }

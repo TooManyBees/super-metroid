@@ -31,6 +31,7 @@ const ROM: Rom = Rom(ROM_DATA);
 fn render_animation(sprite: Sprite) {
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
+    let (canvas_zero_x, canvas_zero_y) = sprite.zero();
     let mut window: PistonWindow =WindowSettings::new("samus",
         [sprite.width() as u32 * zoom as u32, sprite.height() as u32 * zoom as u32])
             .exit_on_esc(true)
@@ -40,17 +41,21 @@ fn render_animation(sprite: Sprite) {
             .unwrap();
     let palette = sprite.palettef32();
     let mut spriteview = SpriteView::new(&sprite);
+
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics| {
             if let Some(_) = event.render_args() {
                 clear([0.0; 4], graphics);
 
                 let ref composite = spriteview.frame();
+                let offset_x = (canvas_zero_x - composite.zero_x) as usize;
+                let offset_y = (canvas_zero_y - composite.zero_y) as usize;
+
                 for (i, p) in composite.buffer.iter().enumerate() {
                     if *p == 0 {
                         continue;
                     }
-                    let (px, py) = (i % composite.width as usize, i / composite.width as usize);
+                    let (px, py) = (offset_x + i % composite.width as usize, offset_y + i / composite.width as usize);
                     let (r, g, b) = palette[*p as usize];
                     rectangle(
                         [r, g, b, 1.0],
