@@ -1,4 +1,4 @@
-use std::cmp;
+// use std::cmp;
 use util::{bgr555_rgb888, bgr555_rgbf32};
 
 pub struct CompositedFrame {
@@ -23,25 +23,25 @@ impl Sprite {
         }
     }
 
-    pub fn width(&self) -> u16 {
-        let (l, r) = self.frames.iter().fold((0, 0), |(l, r), f| {
-            (cmp::max(l, f.zero_x), cmp::max(r, f.width - f.zero_x)) // SHOW ME YOUR MOVES
-        });
-        l + r
-    }
+    // pub fn width(&self) -> u16 {
+    //     let (l, r) = self.frames.iter().fold((0, 0), |(l, r), f| {
+    //         (cmp::max(l, f.zero_x), cmp::max(r, f.width - f.zero_x)) // SHOW ME YOUR MOVES
+    //     });
+    //     l + r
+    // }
 
-    pub fn height(&self) -> u16 {
-        let (t, b) = self.frames.iter().fold((0, 0), |(t, b), f| {
-            (cmp::max(t, f.zero_y), cmp::max(b, f.height - f.zero_y))
-        });
-        t + b
-    }
+    // pub fn height(&self) -> u16 {
+    //     let (t, b) = self.frames.iter().fold((0, 0), |(t, b), f| {
+    //         (cmp::max(t, f.zero_y), cmp::max(b, f.height - f.zero_y))
+    //     });
+    //     t + b
+    // }
 
-    pub fn zero(&self) -> (u16, u16) {
-        self.frames.iter().fold((0, 0), |(x, y), f| {
-            (cmp::max(x, f.zero_x), cmp::max(y, f.zero_y))
-        })
-    }
+    // pub fn zero(&self) -> (u16, u16) {
+    //     self.frames.iter().fold((0, 0), |(x, y), f| {
+    //         (cmp::max(x, f.zero_x), cmp::max(y, f.zero_y))
+    //     })
+    // }
 
     pub fn frames(&self) -> &[CompositedFrame] {
         &self.frames
