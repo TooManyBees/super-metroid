@@ -71,11 +71,11 @@ fn render_animation(sprite: Sprite) {
     }
 }
 
-fn render_tile_map(tiles: Vec<[u8; 64]>, palette: Vec<u16>) {
+fn render_tile_map(tiles: &[[u8; 64]], palette: &[u16]) {
     let palette: Vec<_> = palette.iter().map(bgr555_rgbf32).collect();
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;
-    let mut window: PistonWindow = WindowSettings::new("creature",
+    let mut window: PistonWindow = WindowSettings::new("sprite sheet",
         [128 * zoom as u32, (tiles.len()* zoom / 2) as u32])
             .exit_on_esc(true)
             .opengl(opengl)
@@ -197,15 +197,29 @@ fn main() {
             let durations = samus::lookup_frame_durations(&ROM, addr as usize);
             let tile_maps = samus::tilemaps(&ROM, addr as usize, durations.len());
             let tile_sets = samus::graphics(&ROM, addr as usize, durations.len());
-            let frames: Vec<_> = zip3(tile_maps, tile_sets, durations)
+            let frames: Vec<_> = zip3(tile_maps, &tile_sets, durations)
                 .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
             let p = PcAddress(0xD9400); // lol trolled, not a snes address. There goes 1 day... :/
             let palette: Vec<_> = ROM.read(p, 32)
                 .chunks(2)
                 .map(LittleEndian::read_u16)
                 .collect();
-            let sprite = Sprite::new(frames, palette);
-            render_animation(sprite);
+            let sprite = Sprite::new(frames, &palette);
+            match action.format {
+                Animate => render_animation(sprite),
+                Gif => write_sprite_to_gif(
+                        "samus",
+                        sprite.frames(),
+                        &sprite.palette888()
+                    ).expect("argh!"),
+                Spritesheet => {
+                    let tiles = tile_sets.iter().fold(vec![], |mut acc, tiles| {
+                        acc.extend_from_slice(&tiles);
+                        acc
+                    });
+                    render_tile_map(&tiles, &palette);
+                },
+            };
         },
         (Some(Enemy), Some(addr)) => {
             let addr = if addr == (addr & 0xFFFF) {
@@ -220,16 +234,16 @@ fn main() {
 
             match action.format {
                 Spritesheet => {
-                    render_tile_map(tiles, palette);
+                    render_tile_map(&tiles, &palette);
                 },
                 Animate => {
                     let frames: Vec<_> = creature.frames().iter().map(|f| f.composited(&tiles)).collect();
-                    let sprite = Sprite::new(frames, palette);
+                    let sprite = Sprite::new(frames, &palette);
                     render_animation(sprite);
                 },
                 Gif => {
                     let frames: Vec<_> = creature.frames().iter().map(|f| f.composited(&tiles)).collect();
-                    let sprite = Sprite::new(frames, palette);
+                    let sprite = Sprite::new(frames, &palette);
                     write_sprite_to_gif(
                         &creature.name().unwrap_or("enemy".to_string()),
                         sprite.frames(),

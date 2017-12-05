@@ -10,13 +10,13 @@ pub struct CompositedFrame {
     pub duration: u16,
 }
 
-pub struct Sprite {
+pub struct Sprite<'a> {
     frames: Vec<CompositedFrame>,
-    palette: Vec<u16>,
+    palette: &'a [u16],
 }
 
-impl Sprite {
-    pub fn new(frames: Vec<CompositedFrame>, palette: Vec<u16>) -> Self {
+impl<'a> Sprite<'a> {
+    pub fn new(frames: Vec<CompositedFrame>, palette: &'a [u16]) -> Self {
         Sprite {
             frames: frames,
             palette: palette,
