@@ -45,7 +45,7 @@ pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>
     data.into_iter().map(|(t, b)| generate_graphics(rom, t, b)).collect()
 }
 
-pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize, _num_frames: usize) -> &'a [u8] {
+pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize) -> &'a [u8] {
     let addr = LittleEndian::read_u16(&rom.read(FRAME_DURATION_TABLE.to_pc() + state * 2, 2)) as u32;
     let mut len = 0;
     for byte in &rom[(FRAME_DURATION_START + addr).to_pc()..] {
