@@ -25,7 +25,7 @@ use frame_map::FrameMap;
 
 use piston_window::*;
 
-const ROM_DATA: &'static [u8] = include_bytes!("data/Super Metroid (Japan, USA) (En,Ja).sfc");
+const ROM_DATA: &'static [u8] = include_bytes!("../data/Super Metroid (Japan, USA) (En,Ja).sfc");
 const ROM: Rom = Rom(ROM_DATA);
 
 fn render_animation(sprite: Sprite) {
