@@ -4,6 +4,6 @@ version = "0.1.0"
 authors = ["Jess Bees <jesse@toomanybees.com>"]
 
 [dependencies]
-byteorder = "*"
-piston_window = "0.70.0"
+byteorder = "1.2"
+piston_window = "0.74"
 gif = "*"
