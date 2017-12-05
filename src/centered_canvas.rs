@@ -1,81 +1,63 @@
 // http://old.metroidconstruction.com/tilemapediting.php
 
-pub struct CenteredCanvas {
-    pub width: u16,
-    pub height: u16,
-    zero: u16,
-    pub buffer: Vec<u8>,
+fn _paint_tile(buffer: &mut [u8], tile: &[u8], width: usize, offset: usize, flip_x: bool, flip_y: bool) {
+    let mut index = offset;
+    if flip_y {
+        for row in tile.chunks(8).rev() {
+            _paint_row(buffer, row, index, flip_x);
+            index += width as usize;
+        }
+    } else {
+        for row in tile.chunks(8) {
+            _paint_row(buffer, row, index, flip_x);
+            index += width as usize;
+        }
+    }
 }
 
-impl CenteredCanvas {
-    pub fn new(width: u16, height: u16, zero: (u16, u16)) -> Self {
-        CenteredCanvas {
-            width: width,
-            height: height,
-            zero: zero.1 * width + zero.0,
-            buffer: vec![0; width as usize * height as usize],
-        }
-    }
-
-    fn offset(&self, x: i16, y: i16) -> usize {
-        let mut offset = self.zero as usize;
-        if x >= 0 {
-            offset += x as usize;
-        } else {
-            offset -= (-x) as usize;
-        }
-        if y >= 0 {
-            offset += y as usize * self.width as usize;
-        } else {
-            offset -= ((-y) as usize) * self.width as usize;
-        }
-        offset
-    }
-
-    fn _paint_tile(&mut self, tile: &[u8], offset: usize, flip_x: bool, flip_y: bool) {
-        let mut index = offset;
-        if flip_y {
-            for row in tile.chunks(8).rev() {
-                self._paint_row(row, index, flip_x);
-                index += self.width as usize;
+fn _paint_row(buffer: &mut [u8], row: &[u8], offset: usize, flip_x: bool) {
+    if flip_x {
+        for (n, px) in row.iter().rev().enumerate() {
+            if *px == 0 {
+                continue;
             }
-        } else {
-            for row in tile.chunks(8) {
-                self._paint_row(row, index, flip_x);
-                index += self.width as usize;
+            buffer[offset + n] = *px;
+        }
+    } else {
+        for (n, px) in row.iter().enumerate() {
+            if *px == 0 {
+                continue;
             }
+            buffer[offset + n] = *px;
         }
     }
+}
 
-    fn _paint_row(&mut self, row: &[u8], offset: usize, flip_x: bool) {
-        if flip_x {
-            for (n, px) in row.iter().rev().enumerate() {
-                if *px == 0 {
-                    continue;
-                }
-                self.buffer[offset + n] = *px;
-            }
-        } else {
-            for (n, px) in row.iter().enumerate() {
-                if *px == 0 {
-                    continue;
-                }
-                self.buffer[offset + n] = *px;
-            }
-        }
+fn offset(width: u16, zx: u16, zy: u16, x: i16, y: i16) -> usize {
+    let mut center = (zy * width + zx) as usize;
+    if x >= 0 {
+        center += x as usize;
+    } else {
+        center -= (-x) as usize;
     }
+    if y >= 0 {
+        center += y as usize * width as usize;
+    } else {
+        center -= (-y) as usize * width as usize;
+    }
+    center
+}
 
-    pub fn paint_tile(&mut self, tile: &[u8], x: i16, y: i16, flip_x: bool, flip_y: bool) {
-        let offset = self.offset(x, y);
-        self._paint_tile(&tile, offset, flip_x, flip_y);
-    }
+pub fn paint_tile(buffer: &mut [u8], width: u16, (zx, zy): (u16, u16), tile: &[u8], (x, y): (i16, i16), flip_x: bool, flip_y: bool) {
+    let offset = offset(width, zx, zy, x, y);
+    _paint_tile(buffer, &tile, width as usize, offset, flip_x, flip_y);
+}
 
-    pub fn paint_block(&mut self, tile0: &[u8], tile1: &[u8], tile2: &[u8], tile3: &[u8], x: i16, y: i16, flip_x: bool, flip_y: bool) {
-        let width = self.width as usize;
-        let offset = self.offset(x, y);
-        self._paint_tile(&tile0, offset, flip_x, flip_y);
-        self._paint_tile(&tile1, offset + 8, flip_x, flip_y);
-        self._paint_tile(&tile2, offset + width*8, flip_x, flip_y);
-        self._paint_tile(&tile3, offset + width*8 + 8, flip_x, flip_y);
-    }
+pub fn paint_block(buffer: &mut [u8], width: u16, (zx, zy): (u16, u16), (tile0, tile1, tile2, tile3): (&[u8], &[u8], &[u8], &[u8]), (x, y): (i16, i16), flip_x: bool, flip_y: bool) {
+    let offset = offset(width, zx, zy, x, y);
+    let width = width as usize;
+    _paint_tile(buffer, &tile0, width, offset, flip_x, flip_y);
+    _paint_tile(buffer, &tile1, width, offset + 8, flip_x, flip_y);
+    _paint_tile(buffer, &tile2, width, offset + width*8, flip_x, flip_y);
+    _paint_tile(buffer, &tile3, width, offset + width*8 + 8, flip_x, flip_y);
 }

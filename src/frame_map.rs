@@ -1,7 +1,7 @@
 use snes::{Rom, SnesAddress};
 use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
-use centered_canvas::CenteredCanvas;
+use centered_canvas;
 use sprite::CompositedFrame;
 
 #[derive(Clone)]
@@ -62,7 +62,7 @@ impl FrameMap {
     pub fn composite(frame_maps: &[FrameMap], tiles: &[[u8; 64]], duration: u16) -> CompositedFrame {
         let (zx, zy, width, height) = dimensions(frame_maps);
 
-        let mut canvas = CenteredCanvas::new(width, height, (zx, zy));
+        let mut buffer = vec![0; (width * height) as usize];
 
         for part in frame_maps.iter().rev() {
             if part.is_double() {
@@ -84,19 +84,19 @@ impl FrameMap {
                     mem::swap(&mut tile0, &mut tile2);
                     mem::swap(&mut tile1, &mut tile3);
                 }
-                canvas.paint_block(tile0, tile1, tile2, tile3, part.x(), part.y(), part.flip_horizontal(), part.flip_vertical());
+                centered_canvas::paint_block(&mut buffer, width, (zx, zy), (tile0, tile1, tile2, tile3), (part.x(), part.y()), part.flip_horizontal(), part.flip_vertical());
             } else {
                 if part.tile as usize >= tiles.len() {
                     panic!("Frame part wants tile {} but we only have {}. Try a lower number of frames.", part.tile, tiles.len());
                 }
                 let tile = &tiles[part.tile as usize];
-                canvas.paint_tile(tile, part.x(), part.y(), part.flip_horizontal(), part.flip_vertical());
+                centered_canvas::paint_tile(&mut buffer, width, (zx, zy), tile, (part.x(), part.y()), part.flip_horizontal(), part.flip_vertical());
             }
         }
         CompositedFrame {
-            buffer: canvas.buffer,
-            width: canvas.width,
-            height: canvas.height,
+            buffer: buffer,
+            width: width,
+            height: height,
             zero_x: zx,
             zero_y: zy,
             duration: duration,

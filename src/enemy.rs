@@ -6,8 +6,6 @@ use byteorder::{ByteOrder, LittleEndian};
 use frame_map::FrameMap;
 use sprite::CompositedFrame;
 use bitplanes::Bitplanes;
-#[allow(unused_imports)]
-// use util::print_hex;
 
 pub struct DNA<'a> {
     palet: u32,
