@@ -30,10 +30,10 @@ const ROM: Rom = Rom(ROM_DATA);
 
 fn render_animation(sprite: Sprite) {
     let opengl = OpenGL::V3_2;
-    let zoom = 2usize;
-    let (window_width, window_height) = (128, 128);
+    let zoom = 4usize;
+    let (window_width, window_height) = (64, 64);
     let mut window: PistonWindow =WindowSettings::new("samus",
-        [128 * zoom as u32, 128 * zoom as u32])
+        [(window_width * zoom) as u32, (window_height * zoom) as u32])
             .exit_on_esc(true)
             .opengl(opengl)
             .vsync(true)
