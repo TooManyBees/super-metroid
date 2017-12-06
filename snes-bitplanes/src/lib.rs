@@ -31,15 +31,18 @@
 //! # Usage
 //! 
 //! ```
-//! # use snes_bitplanes::Bitplanes;
+//! # use snes_bitplanes::{Bitplanes, Tile};
 //! # fn main() {
 //! let bitplanes_data = vec![0u8; 128]; // Extremely boring data
-//! let decoded: Vec<_> = Bitplanes::new(&bitplanes_data).collect();
+//! let decoded: Vec<Tile> = Bitplanes::new(&bitplanes_data).collect();
+//! for px in decoded[0].chunks(8) {
+//!     // the Tile struct wraps a 64-byte array, and has a similar API
+//! }
 //! # }
 //! ```
 //!
 //! Currently only 4-bits-per-pixel (16 color) bitplanes are decodable with
-//! this crate.
+//! this crate. More color depths will be added later.
 //!
 //! # Thanks
 //! This crate would not be possible without the research of others,

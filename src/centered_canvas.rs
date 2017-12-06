@@ -1,15 +1,15 @@
 // http://old.metroidconstruction.com/tilemapediting.php
 use snes_bitplanes::Tile;
 
-fn _paint_tile(buffer: &mut [u8], tile: &AsRef<[u8]>, width: usize, offset: usize, flip_x: bool, flip_y: bool) {
+fn _paint_tile(buffer: &mut [u8], tile: &Tile, width: usize, offset: usize, flip_x: bool, flip_y: bool) {
     let mut index = offset;
     if flip_y {
-        for row in tile.as_ref().chunks(8).rev() {
+        for row in tile.chunks(8).rev() {
             _paint_row(buffer, row, index, flip_x);
             index += width as usize;
         }
     } else {
-        for row in tile.as_ref().chunks(8) {
+        for row in tile.chunks(8) {
             _paint_row(buffer, row, index, flip_x);
             index += width as usize;
         }
