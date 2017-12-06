@@ -16,19 +16,22 @@ might have the byte representation:
 00010101 // 14, bitplane 1
 00101110 // 15, bitplane 2
 ```
-The initial decoded values are `00`, `10`, `11`, `00`, `01`, `11`, `01`, `10`.
-In total, 2bpp data will inflate to 4 times its original size
-(because `Bitplanes` iterators yield bytes themselves).
-
 The Super NES is little-endian, so the leftmost bits represent
 the earliest decoded bytes. Also note that the second bitplane
 is the more significant bit in the output.
+
+In total, 2bpp data will inflate to 4 times its original size
+(because `Bitplanes` iterators yield bytes themselves, even though the values
+are generally smaller).
 
 # Usage
 
 ```rust
 let bitplanes_data = vec![0u8; 128]; // Extremely boring data
-let decoded: Vec<_> = Bitplanes::new(&bitplanes_data).collect();
+let decoded: Vec<Tile> = Bitplanes::new(&bitplanes_data).collect();
+for pixel_row in decoded[0].chunks(8) {
+    // the Tile struct wraps a 64-byte array, and has a similar API
+}
 ```
 
 Currently only 4-bits-per-pixel (16 color) bitplanes are decodable with
