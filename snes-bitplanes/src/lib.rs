@@ -9,7 +9,7 @@
 //!
 //! For example, 2-bit-per-pixel data stored as bitplanes
 //! might have the byte representation:
-//! ```text
+//! ```rust
 //! 00101110 //  0, bitplane 1
 //! 01100101 //  1, bitplane 2
 //! 11101001 //  2, bitplane 1
@@ -19,12 +19,14 @@
 //! 00101110 // 15, bitplane 2
 //! ```
 //! The initial decoded values are `00`, `10`, `11`, `00`, `01`, `11`, `01`, `10`.
-//! In total, 2bpp data will inflate to 4 times its original size
-//! (because `Bitplanes` iterators yield bytes themselves).
 //!
 //! The Super NES is little-endian, so the leftmost bits represent
 //! the earliest decoded bytes. Also note that the second bitplane
 //! is the more significant bit in the output.
+//!
+//! In total, 2bpp data will inflate to 4 times its original size
+//! (because `Bitplanes` iterators yield bytes themselves, even though the values
+//! are generally smaller).
 //!
 //! # Usage
 //! 

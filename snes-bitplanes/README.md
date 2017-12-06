@@ -7,7 +7,7 @@ position.
 
 For example, 2-bit-per-pixel data stored as bitplanes
 might have the byte representation:
-```text
+```rust
 00101110 //  0, bitplane 1
 01100101 //  1, bitplane 2
 11101001 //  2, bitplane 1
