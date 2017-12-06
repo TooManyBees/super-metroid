@@ -22,6 +22,7 @@ use util::{bgr555_rgbf32, zip3};
 use std::{env, thread, time, process};
 
 use frame_map::FrameMap;
+use snes_bitplanes::Tile;
 
 use piston_window::*;
 
@@ -71,7 +72,7 @@ fn render_animation(sprite: Sprite) {
     }
 }
 
-fn render_tile_map(tiles: &[[u8; 64]], palette: &[u16]) {
+fn render_tile_map(tiles: &[Tile], palette: &[u16]) {
     let palette: Vec<_> = palette.iter().map(bgr555_rgbf32).collect();
     let opengl = OpenGL::V3_2;
     let zoom = 2usize;

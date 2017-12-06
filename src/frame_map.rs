@@ -1,4 +1,5 @@
 use snes::{Rom, SnesAddress};
+use snes_bitplanes::Tile;
 use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
 use centered_canvas;
@@ -59,7 +60,7 @@ impl FrameMap {
         }
     }
 
-    pub fn composite(frame_maps: &[FrameMap], tiles: &[[u8; 64]], duration: u16) -> CompositedFrame {
+    pub fn composite(frame_maps: &[FrameMap], tiles: &[Tile], duration: u16) -> CompositedFrame {
         let (zx, zy, width, height) = dimensions(frame_maps);
 
         let mut buffer = vec![0; (width * height) as usize];

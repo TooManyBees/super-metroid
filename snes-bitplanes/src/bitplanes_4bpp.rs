@@ -1,4 +1,5 @@
 use core::slice::Chunks;
+use tile::Tile;
 
 /// An iterator over 4-bits-per-pixel bitplanes.
 ///
@@ -7,14 +8,14 @@ use core::slice::Chunks;
 /// 32 bytes consumed, this iterator yields 64 decoded bytes.
 /// (Conceptually, it's an 8x8 tile.)
 ///
-/// The 4 most significan bits of each decoded byte will always be 0.
+/// The 4 most significant bits of each decoded byte will always be 0.
 #[derive(Debug)]
 pub struct Bitplanes<'a> {
     chunks: Chunks<'a, u8>,
 }
 
 impl<'a> Iterator for Bitplanes<'a> {
-    type Item = [u8; 64];
+    type Item = Tile;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.chunks.next()
@@ -46,7 +47,7 @@ impl<'a> Iterator for Bitplanes<'a> {
                         cursor += 1;
                     }
                 }
-                result
+                Tile(result)
             })
     }
 
@@ -83,7 +84,7 @@ impl<'a> Bitplanes<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::Bitplanes;
+    use super::{Bitplanes, Tile};
 
     #[test]
     fn snes_mode_4_4bpp() {
@@ -123,7 +124,7 @@ mod tests {
             0b10000011,
         ];
 
-        let expected = [
+        let expected = Tile([
             0b0000, 0b0100, 0b0011, 0b0000, 0b1001, 0b1001, 0b1001, 0b1000,
             0b1011, 0b1001, 0b1001, 0b1110, 0b1001, 0b0010, 0b1000, 0b1111,
             0b1011, 0b0101, 0b0011, 0b1001, 0b1011, 0b1001, 0b0010, 0b0111,
@@ -132,15 +133,11 @@ mod tests {
             0b0001, 0b0000, 0b0100, 0b0011, 0b1011, 0b0111, 0b0101, 0b1111,
             0b0101, 0b0110, 0b1100, 0b0011, 0b1110, 0b0001, 0b1011, 0b0000,
             0b1000, 0b0000, 0b0010, 0b0101, 0b0010, 0b0011, 0b1010, 0b1101,                                     
-        ];
+        ]);
 
         let mut decoded = Bitplanes::new(encoded);
 
-        // // The delights of working with fixed length arrays :|
-
-        let some_decoded_tile = decoded.next();
-        assert!(some_decoded_tile.is_some());
-        assert_eq!(&expected[..], &some_decoded_tile.unwrap()[..]);
+        assert_eq!(decoded.next(), Some(expected));
         assert!(decoded.next().is_none());
     }
 }

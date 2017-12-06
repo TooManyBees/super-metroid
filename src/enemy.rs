@@ -5,7 +5,7 @@ use std::{fmt};
 use byteorder::{ByteOrder, LittleEndian};
 use frame_map::FrameMap;
 use sprite::CompositedFrame;
-use snes_bitplanes::Bitplanes;
+use snes_bitplanes::{Bitplanes, Tile};
 
 pub struct DNA<'a> {
     palet: u32,
@@ -72,7 +72,7 @@ impl<'a> DNA<'a> {
             .collect()
     }
 
-    pub fn graphics(&self) -> Vec<[u8; 64]> {
+    pub fn graphics(&self) -> Vec<Tile> {
         let addr = SnesAddress(self.graphadr).to_pc();
         let data = &self.rom.read(addr, self.sizeb as usize);
         Bitplanes::new(data).collect()
@@ -117,7 +117,7 @@ impl fmt::Debug for Frame {
 }
 
 impl Frame {
-    pub fn composited(&self, tiles: &[[u8; 64]]) -> CompositedFrame {
+    pub fn composited(&self, tiles: &[Tile]) -> CompositedFrame {
         FrameMap::composite(&self.parts, tiles, self.duration)
     }
 }

@@ -2,7 +2,7 @@
 
 use snes::{Rom, PcAddress, SnesAddress};
 use byteorder::{ByteOrder, LittleEndian};
-use snes_bitplanes::Bitplanes;
+use snes_bitplanes::{Bitplanes, Tile};
 use frame_map::FrameMap;
 // use util::print_hex;
 
@@ -39,7 +39,7 @@ pub fn tilemaps(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<FrameMap>
     .collect()
 }
 
-pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<[u8; 64]>> {
+pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<Tile>> {
     let pointers = lookup_frame_dma_pointers(rom, state, num_frames);
     let data = lookup_graphics_data(rom, pointers);
     data.into_iter().map(|(t, b)| generate_graphics(rom, t, b)).collect()
@@ -125,7 +125,7 @@ fn lookup_graphics_data(rom: &Rom, pointer_entries: &[u8]) -> Vec<(DmaEntry, Dma
 }
 
 static HALF_ROW: usize = 0x0100;
-fn generate_graphics(rom: &Rom, top_frame: DmaEntry, bottom_frame: DmaEntry) -> Vec<[u8; 64]> {
+fn generate_graphics(rom: &Rom, top_frame: DmaEntry, bottom_frame: DmaEntry) -> Vec<Tile> {
     debug_assert!(top_frame.1 <= HALF_ROW);
     debug_assert!(top_frame.2 <= HALF_ROW);
     debug_assert!(bottom_frame.1 <= HALF_ROW);
@@ -151,10 +151,10 @@ fn generate_graphics(rom: &Rom, top_frame: DmaEntry, bottom_frame: DmaEntry) -> 
     32 -> 64
     */
 
-    let top_part1_padding = (0..((HALF_ROW - top_frame.1) / 32)).map(|_| [0; 64]);
-    let top_part2_padding = (0..((HALF_ROW - top_frame.2) / 32)).map(|_| [0; 64]);
-    let bottom_part1_padding = (0..((HALF_ROW - bottom_frame.1) / 32)).map(|_| [0; 64]);
-    let bottom_part2_padding = (0..((HALF_ROW - bottom_frame.2) / 32)).map(|_| [0; 64]);
+    let top_part1_padding = (0..((HALF_ROW - top_frame.1) / 32)).map(|_| Tile::default());
+    let top_part2_padding = (0..((HALF_ROW - top_frame.2) / 32)).map(|_| Tile::default());
+    let bottom_part1_padding = (0..((HALF_ROW - bottom_frame.1) / 32)).map(|_| Tile::default());
+    let bottom_part2_padding = (0..((HALF_ROW - bottom_frame.2) / 32)).map(|_| Tile::default());
 
 
     Bitplanes::new(&rom.read(top_frame.0, top_frame.1))

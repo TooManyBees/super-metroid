@@ -1,5 +1,12 @@
 use core::slice::{Iter, IterMut};
-use core::{borrow, cmp, default, fmt, hash};
+use core::{borrow, cmp, default, fmt, hash, ops, slice};
+
+/// `Tile` is a tuple struct wrapping an 8x8 byte array:
+/// conceptually a tile of SNES graphics.
+///
+/// It exists because Rust hates arrays larger than 32 --
+/// downright hates 'em, I say! --
+/// and denies them their rightful impls.
 
 #[derive(Copy, Clone)]
 pub struct Tile(pub [u8; 64]);
@@ -71,5 +78,19 @@ impl borrow::BorrowMut<[u8]> for Tile {
 impl default::Default for Tile {
     fn default() -> Self {
         Tile([0; 64])
+    }
+}
+
+impl ops::Index<usize> for Tile {
+    type Output = u8;
+    #[inline]
+    fn index(&self, i: usize)  -> &u8 {
+        &self.0[i]
+    }
+}
+
+impl Tile {
+    pub fn iter(&self) -> Iter<u8> {
+        slice::SliceExt::iter(&self.0[..])
     }
 }
