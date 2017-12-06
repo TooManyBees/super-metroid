@@ -1,8 +1,8 @@
 extern crate piston_window;
 extern crate byteorder;
 extern crate gif;
+extern crate snes_bitplanes;
 
-mod bitplanes;
 mod enemy;
 mod centered_canvas;
 mod sprite;

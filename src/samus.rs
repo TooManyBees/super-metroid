@@ -2,7 +2,7 @@
 
 use snes::{Rom, PcAddress, SnesAddress};
 use byteorder::{ByteOrder, LittleEndian};
-use bitplanes::Bitplanes;
+use snes_bitplanes::Bitplanes;
 use frame_map::FrameMap;
 // use util::print_hex;
 

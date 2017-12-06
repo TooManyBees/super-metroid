@@ -1,0 +1,6 @@
+[package]
+name = "snes-bitplanes"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+
+[dependencies]

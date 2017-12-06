@@ -855,7 +855,12 @@ dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gif 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.74.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "snes-bitplanes 0.1.0",
 ]
+
+[[package]]
+name = "snes-bitplanes"
+version = "0.1.0"
 
 [[package]]
 name = "stb_truetype"

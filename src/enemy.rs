@@ -5,7 +5,7 @@ use std::{fmt};
 use byteorder::{ByteOrder, LittleEndian};
 use frame_map::FrameMap;
 use sprite::CompositedFrame;
-use bitplanes::Bitplanes;
+use snes_bitplanes::Bitplanes;
 
 pub struct DNA<'a> {
     palet: u32,
