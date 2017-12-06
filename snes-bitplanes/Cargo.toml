@@ -2,5 +2,11 @@
 name = "snes-bitplanes"
 version = "0.1.0"
 authors = ["Jess Bees <jesse@toomanybees.com>"]
+description = "Decoder for the Super NES's bitplanes graphics"
+repository = "https://github.com/TooManyBees/super-metroid/tree/master/snes-bitplanes"
+readme = "README.md"
+keywords = ["snes", "super nintendo", "super nes", "bitplanes"]
+categories = ["encoding", "no-std", "multimedia::images"]
+license = "MIT"
 
 [dependencies]
