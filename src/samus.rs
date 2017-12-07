@@ -87,8 +87,7 @@ fn read_dma(rom: &Rom, table_pointer: PcAddress, entry: u8) -> DmaEntry {
     let dma_offset = LittleEndian::read_u16(&rom.read(table_pointer, 2)) as usize;
     let entry_offset = FRAME_PROGRESSION_TABLES.to_pc() + dma_offset + entry as usize * 7;
     let slice = &rom.read(entry_offset, 7);
-    // It's really a 24-bit LE number in 3 bytes
-    let snes_graphics_addr = LittleEndian::read_u32(&slice[0..4]) & 0x00FFFFFF;
+    let snes_graphics_addr = LittleEndian::read_u24(&slice[0..3]);
     let graphics_addr = SnesAddress(snes_graphics_addr).to_pc();
     let part_1_bytes = LittleEndian::read_u16(&slice[3..5]) as usize;
     let part_2_bytes = LittleEndian::read_u16(&slice[5..7]) as usize;
