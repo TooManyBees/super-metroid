@@ -40,6 +40,11 @@ impl FrameMap {
         self.priority_b & (1 << 7) > 0
     }
 
+    #[inline(always)]
+    pub fn load_next_page(&self) -> bool {
+        self.priority_b & 1 > 0
+    }
+
     pub fn from_rom(rom: &Rom, snes_addr: SnesAddress, offset: usize) -> Vec<Self> {
         // println!("snes addr: {:?}, offset: {:X}", snes_addr, offset);
         let addr = snes_addr.to_pc() + offset;
@@ -63,7 +68,7 @@ impl FrameMap {
     pub fn composite(frame_maps: &[FrameMap], tiles: &[Tile], duration: u16) -> CompositedFrame {
         let (zx, zy, width, height) = dimensions(frame_maps);
 
-        let mut buffer = vec![0; (width * height) as usize];
+        let mut buffer = vec![0; width as usize * height as usize];
 
         for part in frame_maps.iter().rev() {
             if part.is_double() {
@@ -108,8 +113,8 @@ impl FrameMap {
 impl fmt::Debug for FrameMap {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-            "FrameMap {{ x: {:02}, priority_a: {:08b}, y: {:02}, tile: {:03}, priority_b: {:08b} }}",
-            self.x, self.priority_a, self.y, self.tile, self.priority_b
+            "FrameMap {{ x: {:02}, y: {:02}, tile: {:02X}, is_double: {} flip_x: {}, flip_y: {}, next_page: {} }}",
+            self.x, self.y, self.tile, self.is_double(), self.flip_horizontal(), self.flip_vertical(), self.load_next_page()
         )
     }
 }
