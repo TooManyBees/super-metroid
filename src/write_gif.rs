@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::io;
 use util::RGBu8;
-use sprite::CompositedFrame;
+use frame_map::CompositedFrame;
 
 fn center_buffer_on_square(size: usize, frame: &CompositedFrame) -> Vec<u8> {
     let offset_x = size / 2 - frame.zero_x as usize;

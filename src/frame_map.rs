@@ -3,7 +3,15 @@ use snes_bitplanes::Tile;
 use std::{fmt, mem};
 use byteorder::{ByteOrder, LittleEndian};
 use centered_canvas;
-use sprite::CompositedFrame;
+
+pub struct CompositedFrame {
+    pub buffer: Vec<u8>,
+    pub width: u16,
+    pub height: u16,
+    pub zero_x: u16,
+    pub zero_y: u16,
+    pub duration: u16,
+}
 
 #[derive(Clone)]
 pub struct FrameMap {

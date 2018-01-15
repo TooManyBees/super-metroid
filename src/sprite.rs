@@ -1,14 +1,6 @@
 // use std::cmp;
 use util::{bgr555_rgb888, bgr555_rgbf32};
-
-pub struct CompositedFrame {
-    pub buffer: Vec<u8>,
-    pub width: u16,
-    pub height: u16,
-    pub zero_x: u16,
-    pub zero_y: u16,
-    pub duration: u16,
-}
+use frame_map::CompositedFrame;
 
 pub struct Sprite<'a> {
     frames: Vec<CompositedFrame>,
