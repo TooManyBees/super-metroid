@@ -1,2 +1,2 @@
 [workspace]
-members = [ "snes-bitplanes", "sm", "viewer" ]
+members = [ "snes-bitplanes", "sm", "proc-samus", "viewer" ]

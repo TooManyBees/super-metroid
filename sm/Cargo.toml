@@ -6,3 +6,5 @@ authors = ["Jess Bees <jesse@toomanybees.com>"]
 [dependencies]
 snes-bitplanes = { path = "../snes-bitplanes" }
 byteorder = "1.2"
+quote = "0.4"
+proc-macro2 = "0.2"

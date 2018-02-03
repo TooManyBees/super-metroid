@@ -7,6 +7,9 @@
 
 // https://www.smwcentral.net/?p=viewthread&t=13167
 
+use quote::{Tokens, ToTokens};
+use proc_macro2::{TokenTree, TokenNode, Span, Spacing};
+
 use std::cmp;
 
 #[allow(dead_code)]
@@ -93,4 +96,22 @@ impl<T, U, V> Iterator for Zip3<T, U, V>
 pub fn zip3<T, U, V>(t: T, u: U, v: V) -> Zip3<T::IntoIter, U::IntoIter, V::IntoIter>
     where T: IntoIterator, U: IntoIterator, V: IntoIterator {
     Zip3 { t: t.into_iter(), u: u.into_iter(), v: v.into_iter() }
+}
+
+pub fn tt(kind: TokenNode) -> TokenTree {
+    TokenTree {
+        span: Span::def_site(),
+        kind: kind,
+    }
+}
+
+pub fn slice_as_tokens<T: ToTokens>(slice: &[T]) -> Tokens {
+    let mut tokens = quote!();
+    tokens.append(tt(TokenNode::Op('[', Spacing::Joint)));
+    for item in slice {
+        item.to_tokens(&mut tokens);
+        tokens.append(tt(TokenNode::Op(',', Spacing::Alone)));
+    }
+    tokens.append(tt(TokenNode::Op(']', Spacing::Joint)));
+    tokens
 }

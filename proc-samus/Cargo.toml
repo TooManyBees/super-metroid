@@ -1,0 +1,13 @@
+[package]
+name = "proc-samus"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+sm = { path = "../sm" }
+proc-macro2 = "0.2"
+syn = { version = "0.12", features = [ "extra-traits" ] }
+quote = "0.4"
