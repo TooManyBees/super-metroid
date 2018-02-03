@@ -3,15 +3,11 @@ extern crate byteorder;
 extern crate gif;
 extern crate snes_bitplanes;
 
-mod enemy;
-mod centered_canvas;
-mod sprite;
-mod util;
+extern crate sm;
+
 mod write_gif;
 
-mod snes;
-mod samus;
-mod frame_map;
+use sm::*;
 
 use snes::{Rom, PcAddress, SnesAddress};
 use enemy::DNA;
@@ -26,7 +22,7 @@ use snes_bitplanes::Tile;
 
 use piston_window::*;
 
-const ROM_DATA: &'static [u8] = include_bytes!("../data/Super Metroid (Japan, USA) (En,Ja).sfc");
+const ROM_DATA: &'static [u8] = include_bytes!("../../data/Super Metroid (Japan, USA) (En,Ja).sfc");
 const ROM: Rom = Rom(ROM_DATA);
 
 fn render_animation(sprite: Sprite) {

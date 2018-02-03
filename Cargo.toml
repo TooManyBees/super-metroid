@@ -1,12 +1,2 @@
-[package]
-name = "sm"
-version = "0.1.0"
-authors = ["Jess Bees <jesse@toomanybees.com>"]
-
-[dependencies]
-snes-bitplanes = { path = "./snes-bitplanes" }
-byteorder = "1.2"
-piston_window = "0.74"
-gif = "*"
-
 [workspace]
+members = [ "snes-bitplanes", "sm", "viewer" ]

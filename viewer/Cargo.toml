@@ -1,0 +1,15 @@
+[package]
+name = "viewer"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+publish = false
+
+[dependencies]
+sm = { path = "../sm" }
+snes-bitplanes = { path = "../snes-bitplanes" }
+byteorder = "1.2"
+piston_window = "0.74"
+gif = "*"
+csv = "*"
+quote = "*"
+proc-macro2 = "*"

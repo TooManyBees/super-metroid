@@ -2,8 +2,8 @@ use gif::{Frame, Encoder, Repeat, SetParameter};
 use std::borrow::Cow;
 use std::fs::File;
 use std::io;
-use util::RGBu8;
-use frame_map::CompositedFrame;
+use sm::util::RGBu8;
+use sm::frame_map::CompositedFrame;
 
 fn center_buffer_on_square(size: usize, frame: &CompositedFrame) -> Vec<u8> {
     let offset_x = size / 2 - frame.zero_x as usize;

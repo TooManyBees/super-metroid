@@ -86,6 +86,7 @@ impl FrameMap {
                         panic!("Frame part wants tile {} but we only have {}. Try a lower number of frames.", i, tiles.len());
                     }
                 }
+                // let n = if part.load_next_page() { n - 32 } else { n };
                 let mut tile0 = &tiles[n];
                 let mut tile1 = &tiles[n + 1];
                 let mut tile2 = &tiles[n + 16];

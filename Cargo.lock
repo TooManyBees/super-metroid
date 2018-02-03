@@ -858,8 +858,6 @@ name = "sm"
 version = "0.1.0"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "gif 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "piston_window 0.74.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "snes-bitplanes 0.2.0",
 ]
 
@@ -944,6 +942,20 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "piston-float 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "viewer"
+version = "0.1.0"
+dependencies = [
+ "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "csv 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "gif 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "piston_window 0.74.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sm 0.1.0",
+ "snes-bitplanes 0.2.0",
 ]
 
 [[package]]
