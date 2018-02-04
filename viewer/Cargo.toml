@@ -9,6 +9,4 @@ sm = { path = "../sm" }
 snes-bitplanes = { path = "../snes-bitplanes" }
 byteorder = "1.2"
 piston_window = "0.75"
-gif = "*"
-csv = "*"
-quote = "*"
+gif = "0.9"
