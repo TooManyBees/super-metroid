@@ -2,7 +2,6 @@ use byteorder::{ByteOrder, LittleEndian};
 use snes::{Rom, SnesAddress};
 use frame_map::CompositedFrame;
 
-use util::slice_as_tokens;
 use quote::{Tokens, ToTokens};
 
 const FRAME_DURATION_TABLE: SnesAddress = SnesAddress(0x91B010);
@@ -59,7 +58,7 @@ impl<'a> Frame<'a> {
 
 impl<'a> ToTokens for Frame<'a> {
     fn to_tokens(&self, tokens: &mut Tokens) {
-        let buffer_tokens = slice_as_tokens(self.buffer);
+        let buffer = self.buffer;
         let width = self.width;
         let height = self.height;
         let zero_x = self.zero_x;
@@ -67,7 +66,7 @@ impl<'a> ToTokens for Frame<'a> {
         let duration = self.duration;
         tokens.append_all(quote!{
             Frame {
-                buffer: &#buffer_tokens,
+                buffer: &[#(#buffer),*],
                 width: #width,
                 height: #height,
                 zero_x: #zero_x,

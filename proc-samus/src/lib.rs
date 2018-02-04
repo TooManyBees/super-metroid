@@ -7,7 +7,6 @@ extern crate sm;
 #[macro_use] extern crate quote;
 extern crate byteorder;
 
-use quote::ToTokens;
 use proc_macro::TokenStream;
 use std::str::FromStr;
 use syn::DeriveInput;
@@ -17,7 +16,7 @@ use sm::{snes, samus, pose, frame_map, util};
 use snes::{Rom, PcAddress};
 use pose::{Pose, Frame};
 use frame_map::FrameMap;
-use util::{slice_as_tokens, tuple3_as_tokens, zip3, bgr555_rgb888};
+use util::{zip3, bgr555_rgb888};
 
 const ROM_DATA: &'static [u8] = include_bytes!("../../data/Super Metroid (Japan, USA) (En,Ja).sfc");
 const ROM: Rom = Rom(ROM_DATA);
@@ -64,25 +63,21 @@ pub fn samus_pose(input: TokenStream) -> TokenStream {
         .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
     let borrow_frames: Vec<_> = frames.iter().map(|f| Frame::new(&f)).collect();
 
-    let sequence_len_tokens = sequence_len.into_tokens();
-    let durations_tokens = slice_as_tokens(durations);
     let sequence_terminator = sequence.1;
-
-    let frames_tokens = slice_as_tokens(&borrow_frames);
 
     TokenStream::from(quote!{
         use sm::pose::{Pose, Frame, Terminator};
-        static DURATIONS: [u8; #sequence_len_tokens] = #durations_tokens;
-        static FRAMES: [Frame; #sequence_len_tokens] = #frames_tokens;
+        static DURATIONS: [u8; #sequence_len] = [#(#durations),*];
+        static FRAMES: [Frame; #sequence_len] = [#(#borrow_frames),*];
 
         pub fn pose<'a>() -> Pose<'a> {
             Pose {
                 name: #name,
                 terminator: #sequence_terminator,
-                durations: & DURATIONS,
-                length: #sequence_len_tokens,
+                durations: &DURATIONS,
+                length: #sequence_len,
                 cursor: 0,
-                frames: & FRAMES,
+                frames: &FRAMES,
             }
         }
     })
@@ -114,19 +109,16 @@ pub fn samus_palette(input: TokenStream) -> TokenStream {
     println!("We parsed palette #[Addr=\"{}\"]", addr);
 
     let p = PcAddress(addr);
-    let palette: Vec<_> = ROM.read(p, 32)
+    let palette = ROM.read(p, 32)
         .chunks(2)
         .map(LittleEndian::read_u16)
-        .collect();
+        .map(|c| bgr555_rgb888(&c));
 
-    let palette_tokens = {
-        let uuuugh_tokens: Vec<_> = palette.iter().map(|c| tuple3_as_tokens(&bgr555_rgb888(&c))).collect();
-        slice_as_tokens(&uuuugh_tokens)
-    };
-    let palette_len_tokens = palette.len().into_tokens();
+    let palette_tokens: Vec<_> = palette.map(|(r, g, b)| quote!{(#r, #g, #b)}).collect();
+    let palette_len = palette_tokens.len();
 
     TokenStream::from(quote!{
         use sm::util::RGBu8;
-        pub static PALETTE: [RGBu8; #palette_len_tokens] = #palette_tokens;
+        pub static PALETTE: [RGBu8; #palette_len] = [#(#palette_tokens),*];
     })
 }
