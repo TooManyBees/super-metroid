@@ -8,8 +8,7 @@ publish = false
 sm = { path = "../sm" }
 snes-bitplanes = { path = "../snes-bitplanes" }
 byteorder = "1.2"
-piston_window = "0.74"
+piston_window = "0.75"
 gif = "*"
 csv = "*"
 quote = "*"
-proc-macro2 = "*"

@@ -139,9 +139,9 @@ impl<'a> Pose<'a> {
                 Terminator::TransitionTo(pose) => Next::NewPose(pose),
             }
         } else {
-            let c = self.cursor;
-            self.cursor += 1;
-            Next::Frame(&self.frames[c])
+            let f = Next::Frame(&self.frames[self.cursor]);
+            self.cursor = (self.cursor + 1) % self.length;
+            f
         }
     }
 

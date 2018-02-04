@@ -1,0 +1,10 @@
+[package]
+name = "static_viewer"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+publish = false
+
+[dependencies]
+piston_window = "0.75"
+proc-samus = { path = "../proc-samus" }
+sm = { path = "../sm" }
