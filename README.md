@@ -29,4 +29,6 @@ Using this project depends on having the Super Metroid ROM named
 `Super Metroid (Japan, USA) (En,Ja).sfc` (not included, duh) in a folder
 called `data` relative to the base of the workspace.
 
+![Samus moving right with gun extended, not aiming](run_samus_run.gif)
+
 *<sup>1</sup><a name="videogame">fight me</a>*
