@@ -21,7 +21,16 @@ mod standing {
     struct standing;
 }
 
+mod palette {
+    #[allow(dead_code, non_camel_case_types)]
+    #[derive(SamusPalette)]
+    #[Addr = "D9400"]
+    struct whatever;
+}
+
 fn main() {
-    let pose = &standing::POSE;
+    let pose = standing::pose();
+    let palette = &palette::PALETTE;
     println!("{:?}", pose.name);
+    println!("{:?}", palette);
 }

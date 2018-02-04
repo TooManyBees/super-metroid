@@ -11,3 +11,4 @@ sm = { path = "../sm" }
 proc-macro2 = "0.2"
 syn = { version = "0.12", features = [ "extra-traits" ] }
 quote = "0.4"
+byteorder = "1.2"

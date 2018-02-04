@@ -115,3 +115,15 @@ pub fn slice_as_tokens<T: ToTokens>(slice: &[T]) -> Tokens {
     tokens.append(tt(TokenNode::Op(']', Spacing::Joint)));
     tokens
 }
+
+pub fn tuple3_as_tokens<T: ToTokens>(tuple: &(T, T, T)) -> Tokens {
+    let mut tokens = quote!();
+    tokens.append(tt(TokenNode::Op('(', Spacing::Joint)));
+    tuple.0.to_tokens(&mut tokens);
+    tokens.append(tt(TokenNode::Op(',', Spacing::Alone)));
+    tuple.1.to_tokens(&mut tokens);
+    tokens.append(tt(TokenNode::Op(',', Spacing::Alone)));
+    tuple.2.to_tokens(&mut tokens);
+    tokens.append(tt(TokenNode::Op(')', Spacing::Joint)));
+    tokens
+}
