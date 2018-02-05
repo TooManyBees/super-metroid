@@ -1,6 +1,5 @@
 use byteorder::{ByteOrder, LittleEndian};
 use snes::{Rom, SnesAddress};
-use frame_map::CompositedFrame;
 
 use quote::{Tokens, ToTokens};
 
@@ -41,19 +40,6 @@ pub struct Frame<'a> {
     pub zero_x: u16,
     pub zero_y: u16,
     pub duration: u16,
-}
-
-impl<'a> Frame<'a> {
-    pub fn new(frame: &'a CompositedFrame) -> Self {
-        Frame {
-            buffer: &frame.buffer,
-            width: frame.width,
-            height: frame.height,
-            zero_x: frame.zero_x,
-            zero_y: frame.zero_y,
-            duration: frame.duration,
-        }
-    }
 }
 
 impl<'a> ToTokens for Frame<'a> {

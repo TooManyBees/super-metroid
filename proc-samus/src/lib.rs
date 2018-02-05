@@ -61,7 +61,14 @@ pub fn samus_pose(input: TokenStream) -> TokenStream {
     let tile_sets = samus::graphics(&ROM, state, durations.len());
     let frames: Vec<_> = zip3(tile_maps, &tile_sets, durations)
         .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
-    let borrow_frames: Vec<_> = frames.iter().map(|f| Frame::new(&f)).collect();
+    let borrow_frames: Vec<_> = frames.iter().map(|f| Frame {
+        buffer: &f.buffer,
+        width: f.width,
+        height: f.height,
+        zero_x: f.zero_x,
+        zero_y: f.zero_y,
+        duration: f.duration,
+    }).collect();
 
     let sequence_terminator = sequence.1;
 
