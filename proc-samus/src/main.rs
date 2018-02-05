@@ -1,32 +1,10 @@
-#[macro_use] extern crate proc_samus;
+#![feature(proc_macro)]
+extern crate proc_samus;
 extern crate sm;
 
-// macro_rules! pose {
-//     ($name:ident, $state:expr) => {
-//         mod $name {
-//             #[allow(dead_code, non_camel_case_types)]
-//             #[derive(SamusPose)]
-//             #[Name = $name] #[State = $state]
-//             struct $name;
-//         }
-//     }
-// }
+proc_samus::samus_pose!(standing, 0x0D);
 
-// pose!(standing, 0);
-
-mod standing {
-    #[allow(dead_code, non_camel_case_types)]
-    #[derive(SamusPose)]
-    #[Name = "standing"] #[State = "0"]
-    struct standing;
-}
-
-mod palette {
-    #[allow(dead_code, non_camel_case_types)]
-    #[derive(SamusPalette)]
-    #[Addr = "D9400"]
-    struct whatever;
-}
+proc_samus::samus_palettes!();
 
 fn main() {
     let pose = standing::pose();

@@ -1,4 +1,5 @@
-#[macro_use] extern crate proc_samus;
+#![feature(proc_macro)]
+extern crate proc_samus;
 extern crate piston_window;
 extern crate sm;
 
@@ -6,19 +7,9 @@ use std::{thread, time};
 use piston_window::*;
 use sm::pose::Next;
 
-mod moving_right_gun_extended_not_aiming {
-    #[allow(dead_code, non_camel_case_types)]
-    #[derive(SamusPose)]
-    #[Name = "moving_right_gun_extended_not_aiming"] #[State = "11"]
-    struct moving_right_gun_extended_not_aiming;
-}
+proc_samus::samus_pose!(moving_right_gun_extended_not_aiming, 0x0B);
 
-mod palette {
-    #[allow(dead_code, non_camel_case_types)]
-    #[derive(SamusPalette)]
-    #[Addr = "D9400"]
-    struct whatever;
-}
+proc_samus::samus_palettes!();
 
 fn main() {
     let mut pose = moving_right_gun_extended_not_aiming::pose();
