@@ -36,8 +36,8 @@ fn main() {
             if let Some(_) = event.render_args() {
                 clear([0.0; 4], graphics);
 
-                let composite = if let Next::Frame(f) = pose.next() {
-                    f
+                let (composite, duration) = if let Next::Frame(f, d) = pose.next() {
+                    (f, d)
                 } else {
                     unreachable!()
                 };
@@ -58,7 +58,7 @@ fn main() {
                         graphics,
                     )
                 }
-                let duration = time::Duration::from_millis(composite.duration as u64 * 16);
+                let duration = time::Duration::from_millis(duration as u64 * 16);
                 thread::sleep(duration);
             }
         });

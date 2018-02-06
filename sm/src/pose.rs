@@ -29,7 +29,7 @@ impl ToTokens for Terminator {
 }
 
 pub enum Next<'a> {
-    Frame(&'a Frame<'a>),
+    Frame(&'a Frame<'a>, u8),
     NewPose(u8),
 }
 
@@ -39,7 +39,6 @@ pub struct Frame<'a> {
     pub height: u16,
     pub zero_x: u16,
     pub zero_y: u16,
-    pub duration: u16,
 }
 
 impl<'a> ToTokens for Frame<'a> {
@@ -49,7 +48,6 @@ impl<'a> ToTokens for Frame<'a> {
         let height = self.height;
         let zero_x = self.zero_x;
         let zero_y = self.zero_y;
-        let duration = self.duration;
         tokens.append_all(quote!{
             Frame {
                 buffer: &[#(#buffer),*],
@@ -57,7 +55,6 @@ impl<'a> ToTokens for Frame<'a> {
                 height: #height,
                 zero_x: #zero_x,
                 zero_y: #zero_y,
-                duration: #duration,
             }
         })
     }
@@ -114,33 +111,19 @@ impl<'a> Pose<'a> {
             match self.terminator {
                 Terminator::Loop => {
                     self.cursor = 0;
-                    Next::Frame(&self.frames[0])
+                    Next::Frame(&self.frames[0], self.durations[0])
                 },
                 Terminator::Backtrack(number_of_frames) => {
                     self.cursor -= number_of_frames as usize;
-                    Next::Frame(&self.frames[self.cursor])
+                    Next::Frame(&self.frames[self.cursor], self.durations[self.cursor])
                 },
-                Terminator::Stop => Next::Frame(&self.frames[self.cursor-1]),
+                Terminator::Stop => Next::Frame(&self.frames[self.cursor-1], self.durations[self.cursor-1]), //optimization?
                 Terminator::TransitionTo(pose) => Next::NewPose(pose),
             }
         } else {
-            let f = Next::Frame(&self.frames[self.cursor]);
+            let f = Next::Frame(&self.frames[self.cursor], self.durations[self.cursor]);
             self.cursor = (self.cursor + 1) % self.length;
             f
         }
     }
-
-    // pub fn jump()
-
-    // pub fn crouch()
-
-    // pub fn morph()
-
-    // pub fn turn_left()
-
-    // pub fn turn_right()
-
-    // pub fn move_left()
-
-    // pub fn move_right()
 }

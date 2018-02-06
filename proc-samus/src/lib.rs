@@ -77,7 +77,6 @@ pub fn samus_pose(input: TokenStream) -> TokenStream {
         height: f.height,
         zero_x: f.zero_x,
         zero_y: f.zero_y,
-        duration: f.duration,
     }).collect();
 
     TokenStream::from(quote!{
