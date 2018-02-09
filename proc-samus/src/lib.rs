@@ -4,15 +4,20 @@
 extern crate proc_macro;
 extern crate proc_macro2;
 #[macro_use] extern crate syn;
-extern crate sm;
 #[macro_use] extern crate quote;
 extern crate byteorder;
 
+extern crate sm;
+
+mod poses_list;
+
 use proc_macro::TokenStream;
 use std::str::FromStr;
+use std::collections::HashSet;
 use syn::{Ident, Expr};
+use syn::punctuated::Punctuated;
 use syn::synom::Synom;
-use quote::ToTokens;
+use quote::{Tokens, ToTokens};
 use byteorder::{ByteOrder, LittleEndian};
 
 use sm::{snes, samus, pose, frame_map, util};
@@ -24,43 +29,23 @@ use util::{zip3, bgr555_rgb888};
 const ROM_DATA: &'static [u8] = include_bytes!("../../data/Super Metroid (Japan, USA) (En,Ja).sfc");
 const ROM: Rom = Rom(ROM_DATA);
 
-struct PoseInfo {
-    name: Ident,
-    state: Expr,
-}
-
-impl Synom for PoseInfo {
-    named!(parse -> Self, do_parse!(
-        name: syn!(Ident) >>
-        punct!(,) >>
-        state: syn!(Expr) >>
-        (PoseInfo { name, state })
-    ));
-}
-
-fn parse_pose_id(input: TokenStream) -> (Ident, usize) {
-    let PoseInfo { name, state } = syn::parse(input).expect("proc-samus::samus_pose: falied to parse input");
-
-    let id = if let syn::Expr::Lit(expr_lit) = state {
+fn parse_pose_state(state: syn::Expr) -> usize {
+    if let syn::Expr::Lit(expr_lit) = state {
         if let syn::Lit::Int(int) = expr_lit.lit {
             let s = int.into_tokens().to_string();
-            usize::from_str(&s).unwrap_or_else(|_| usize::from_str_radix(&s.trim_left_matches("0x"), 16).expect("proc-samus::samus_pose: `state` must be a positive hex or decimal number"))
+            usize::from_str(&s).unwrap_or_else(|_| {
+                usize::from_str_radix(&s.trim_left_matches("0x"), 16)
+                .expect("proc-samus::samus_pose: `state` must be a positive hex or decimal number")
+            })
         } else {
             panic!("proc-samus::samus_pose: `state` must be a positive hex or decimal number");
         }
     } else {
         unreachable!("proc-samus::samus_pose: `state` is not a syn::Expr::Lit; PoseInfo::parse should have required this.");
-    };
-
-    ( name, id )
+    }
 }
 
-#[proc_macro]
-pub fn samus_pose(input: TokenStream) -> TokenStream {
-    let (name, state) = parse_pose_id(input);
-
-    println!("We parsed samus_pose({}, {})", name, state);
-
+fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
     let name_str = name.into_tokens().to_string();
     let sequence = Pose::lookup_frame_sequence(&ROM, state);
     let durations = sequence.0;
@@ -79,21 +64,66 @@ pub fn samus_pose(input: TokenStream) -> TokenStream {
         zero_y: f.zero_y,
     }).collect();
 
-    TokenStream::from(quote!{
-        mod #name {
-            use sm::pose::{Pose, Frame, Terminator};
-            static DURATIONS: [u8; #sequence_len] = [#(#durations),*];
-            static FRAMES: [Frame; #sequence_len] = [#(#borrow_frames),*];
+    quote!{
+        Pose {
+            name: #name_str,
+            terminator: #sequence_terminator,
+            durations: &[#(#durations),*],
+            length: #sequence_len,
+            cursor: 0,
+            frames: &[#(#borrow_frames),*],
+        }
+    }
+}
 
-            pub fn pose<'a>() -> Pose<'a> {
-                Pose {
-                    name: #name_str,
-                    terminator: #sequence_terminator,
-                    durations: &DURATIONS,
-                    length: #sequence_len,
-                    cursor: 0,
-                    frames: &FRAMES,
-                }
+struct Chosen {
+    ids: HashSet<Expr>,
+}
+
+impl Synom for Chosen {
+    named!(parse -> Self, map!(
+        brackets!(Punctuated::<Expr, Token![,]>::parse_terminated_nonempty),
+        |(_parens, vars)| Chosen {
+            ids: vars.into_iter().collect(),
+        }
+    ));
+}
+
+fn parse_chosen_poses(input: TokenStream) -> Vec<(Ident, usize)> {
+    let Chosen { ids } = syn::parse(input).expect("eep, hi there");
+    let chosen: HashSet<_> = ids.into_iter().map(|state| parse_pose_state(state)).collect();
+
+    poses_list::ALL.iter()
+        .filter_map(|&(state, name_str, _v_offset)| {
+            if chosen.contains(&state) {
+                let name = Ident::from(name_str);
+                Some((name, state))
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+const NUM_POSES: usize = 256;
+
+#[proc_macro]
+pub fn samus_poses(input: TokenStream) -> TokenStream {
+    let poses = parse_chosen_poses(input);
+    let poses_tokens: Vec<_> = poses.iter().map(|&(name, state)| samus_pose_struct_tokens(name, state)).collect();
+
+    let mut arr = vec![0usize; NUM_POSES];
+    for (n, &(_name, state)) in poses.iter().enumerate() {
+        arr[state] = n;
+    }
+
+    TokenStream::from(quote!{
+        mod poses {
+            static POSES: &[Pose] = &[#(#poses_tokens),*];
+            static LOOKUP: &[usize] = &[#(#arr), *];
+
+            pub fn lookup(n: usize) -> &'static Pose<'static> {
+                &POSES[LOOKUP[n]]
             }
         }
     })

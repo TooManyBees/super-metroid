@@ -60,6 +60,7 @@ impl<'a> ToTokens for Frame<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct Pose<'a> {
     pub name: &'a str,
     pub terminator: Terminator,

@@ -5,14 +5,14 @@ extern crate sm;
 
 use std::{thread, time};
 use piston_window::*;
-use sm::pose::Next;
+use sm::pose::*;
 
-proc_samus::samus_pose!(moving_right_gun_extended_not_aiming, 0x0B);
+proc_samus::samus_poses!([0x0B]);
 
 proc_samus::samus_palettes!();
 
 fn main() {
-    let mut pose = moving_right_gun_extended_not_aiming::pose();
+    let mut pose = poses::lookup(0x0B).clone();
 
     let opengl = OpenGL::V3_2;
     let zoom = 4usize;
