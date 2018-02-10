@@ -67,6 +67,7 @@ fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
     quote!{
         Pose {
             name: #name_str,
+            id: #state,
             terminator: #sequence_terminator,
             durations: &[#(#durations),*],
             length: #sequence_len,
@@ -82,7 +83,7 @@ struct Chosen {
 
 impl Synom for Chosen {
     named!(parse -> Self, map!(
-        brackets!(Punctuated::<Expr, Token![,]>::parse_terminated_nonempty),
+        brackets!(Punctuated::<Expr, Token![,]>::parse_terminated),
         |(_parens, vars)| Chosen {
             ids: vars.into_iter().collect(),
         }
@@ -95,7 +96,7 @@ fn parse_chosen_poses(input: TokenStream) -> Vec<(Ident, usize)> {
 
     poses_list::ALL.iter()
         .filter_map(|&(state, name_str, _v_offset)| {
-            if chosen.contains(&state) {
+            if chosen.is_empty() || chosen.contains(&state) {
                 let name = Ident::from(name_str);
                 Some((name, state))
             } else {

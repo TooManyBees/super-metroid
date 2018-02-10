@@ -7,7 +7,7 @@ pub static ALL: &[(usize, &'static str, u8)] = &[
     (0x05, "facing_right_aiming_upright", 6),
     (0x06, "facing_left_aiming_upleft", 6),
     (0x07, "facing_right_aiming_downright", 6),
-    (0x08, "facing_left_aiming_downloeft", 6),
+    (0x08, "facing_left_aiming_downleft", 6),
     (0x09, "moving_right_not_aiming", 6),
     (0x0A, "moving_left_not_aiming", 6),
     (0x0B, "moving_right_gun_extended_not_aiming", 6),

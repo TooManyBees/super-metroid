@@ -63,6 +63,7 @@ impl<'a> ToTokens for Frame<'a> {
 #[derive(Clone)]
 pub struct Pose<'a> {
     pub name: &'a str,
+    pub id: usize,
     pub terminator: Terminator,
     pub durations: &'a [u8],
     pub frames: &'a [Frame<'a>],
@@ -96,9 +97,10 @@ impl<'a> Pose<'a> {
         Sequence(&rom.read((FRAME_DURATION_START + addr).to_pc(), len), term)
     }
 
-    pub fn new(name: &'a str, frames: &'a [Frame], sequence: &'a Sequence) -> Self {
+    pub fn new(id: usize, name: &'a str, frames: &'a [Frame], sequence: &'a Sequence) -> Self {
         Pose {
             name,
+            id,
             terminator: sequence.1,
             durations: sequence.0,
             length: frames.len(),
