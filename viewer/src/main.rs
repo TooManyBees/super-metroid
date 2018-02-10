@@ -191,7 +191,8 @@ fn main() {
 
     match (action.subject, action.address) {
         (Some(Samus), Some(addr)) => {
-            let durations = samus::lookup_frame_durations(&ROM, addr as usize);
+            let sequence = samus::lookup_frame_sequence(&ROM, addr as usize);
+            let durations = sequence.0;
             let tile_maps = samus::tilemaps(&ROM, addr as usize, durations.len());
             let tile_sets = samus::graphics(&ROM, addr as usize, durations.len());
             let frames: Vec<_> = zip3(tile_maps, &tile_sets, durations)

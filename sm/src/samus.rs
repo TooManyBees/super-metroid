@@ -4,6 +4,7 @@ use snes::{Rom, PcAddress, SnesAddress};
 use byteorder::{ByteOrder, LittleEndian};
 use snes_bitplanes::{Bitplanes, Tile};
 use frame_map::FrameMap;
+use lib_samus::pose::{Terminator, Sequence};
 // use util::print_hex;
 
 const BASE_TABLES_POINTER: SnesAddress = SnesAddress(0x92808D);
@@ -45,24 +46,29 @@ pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<Tile>> {
     data.into_iter().map(|(t, b)| generate_graphics(rom, t, b)).collect()
 }
 
-pub fn lookup_frame_durations<'a>(rom: &'a Rom, state: usize) -> &'a [u8] {
+pub fn lookup_frame_sequence<'a>(rom: &'a Rom, state: usize) -> Sequence<'a> {
     let addr = LittleEndian::read_u16(&rom.read(FRAME_DURATION_TABLE.to_pc() + state * 2, 2)) as u32;
     let mut len = 0;
-    for byte in &rom[(FRAME_DURATION_START + addr).to_pc()..] {
-        // FF = loop
-        // FE (NN) = backgrack NN frames
-        // FD (NN) = transition to pose NN (might be 2 bytes LE)
-        // FB = wall jump only ??
-        // F9 __ __ __ __ __ __ = ??
-        // F8 (NN) = transition to pose NN
-        // F6 = heavy breathing ??
-        // F0 = stop at last frame
-        if *byte >= 0xF0 {
+    let mut term = Terminator::Loop;
+    for bytes in rom[(FRAME_DURATION_START + addr).to_pc()..].windows(2) {
+        if bytes[0] >= 0xF0 {
+            term = match bytes[0] {
+                0xFF => Terminator::Loop,
+                0xFE => Terminator::Backtrack(bytes[1]),
+                0xFD => Terminator::TransitionTo(bytes[1]), // possibly a second extra byte of data
+                0xFB => Terminator::Loop, // wall jump ??
+                0xF9 => Terminator::Loop, // unsure, possibly 6 more bytes though
+                0xF8 => Terminator::TransitionTo(bytes[1]),
+                0xF6 => Terminator::Loop, // heavy breathing ??
+                0xF0 => Terminator::Stop,
+                0xF1 | 0xF2 | 0xF3 | 0xF4 | 0xF5 | 0xF7 | 0xFA | 0xFC => Terminator::Loop,
+                _ => unreachable!(),
+            };
             break;
-        }
+        };
         len += 1;
-    }
-    &rom.read((FRAME_DURATION_START + addr).to_pc(), len)
+    };
+    Sequence(&rom.read((FRAME_DURATION_START + addr).to_pc(), len), term)
 }
 
 fn lookup_tilemap_table<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> (&'a [u8], &'a [u8]) {

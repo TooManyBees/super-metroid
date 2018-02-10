@@ -1,4 +1,4 @@
-use sm::pose::*;
+use pose::{Pose, Frame, Next};
 
 pub struct StateMachine<'a> {
     current: Pose<'a>,

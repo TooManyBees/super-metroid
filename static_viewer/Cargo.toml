@@ -6,5 +6,5 @@ publish = false
 
 [dependencies]
 piston_window = "0.75"
+lib-samus = { path = "../lib-samus" }
 proc-samus = { path = "../proc-samus" }
-sm = { path = "../sm" }

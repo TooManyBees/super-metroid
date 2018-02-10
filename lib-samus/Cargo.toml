@@ -1,0 +1,10 @@
+[package]
+name = "lib-samus"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+
+[features]
+codegen = ["quote"]
+
+[dependencies]
+quote = { version = "0.4", optional = true }

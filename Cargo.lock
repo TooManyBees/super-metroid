@@ -429,6 +429,13 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "lib-samus"
+version = "0.1.0"
+dependencies = [
+ "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -739,6 +746,7 @@ name = "proc-samus"
 version = "0.1.0"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib-samus 0.1.0",
  "proc-macro2 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sm 0.1.0",
@@ -890,8 +898,7 @@ name = "sm"
 version = "0.1.0"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "proc-macro2 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lib-samus 0.1.0",
  "snes-bitplanes 0.2.0",
 ]
 
@@ -903,9 +910,9 @@ version = "0.2.0"
 name = "static_viewer"
 version = "0.1.0"
 dependencies = [
+ "lib-samus 0.1.0",
  "piston_window 0.75.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-samus 0.1.0",
- "sm 0.1.0",
 ]
 
 [[package]]

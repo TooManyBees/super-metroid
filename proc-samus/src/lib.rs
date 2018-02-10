@@ -8,6 +8,7 @@ extern crate proc_macro2;
 extern crate byteorder;
 
 extern crate sm;
+extern crate lib_samus;
 
 mod poses_list;
 
@@ -20,9 +21,9 @@ use syn::synom::Synom;
 use quote::{Tokens, ToTokens};
 use byteorder::{ByteOrder, LittleEndian};
 
-use sm::{snes, samus, pose, frame_map, util};
+use sm::{snes, samus, frame_map, util};
 use snes::{Rom, PcAddress};
-use pose::{Pose, Frame};
+use lib_samus::pose::{Pose, Frame};
 use frame_map::FrameMap;
 use util::{zip3, bgr555_rgb888};
 
@@ -47,7 +48,7 @@ fn parse_pose_state(state: syn::Expr) -> usize {
 
 fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
     let name_str = name.into_tokens().to_string();
-    let sequence = Pose::lookup_frame_sequence(&ROM, state);
+    let sequence = samus::lookup_frame_sequence(&ROM, state);
     let durations = sequence.0;
     let sequence_terminator = sequence.1;
     let sequence_len = durations.len();
@@ -145,8 +146,7 @@ pub fn samus_palettes(_input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote!{
         mod palette {
-            use sm::util::RGBu8;
-            pub static PALETTE: [RGBu8; #palette_len] = [#(#palette_tokens),*];
+            pub static PALETTE: [(u8, u8, u8); #palette_len] = [#(#palette_tokens),*];
         }
     })
 }

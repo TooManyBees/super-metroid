@@ -1,15 +1,13 @@
 #![feature(proc_macro)]
 extern crate proc_samus;
+extern crate lib_samus;
 extern crate piston_window;
-extern crate sm;
 
 use std::{thread, time};
 use piston_window::*;
-use sm::pose::*;
+use lib_samus::pose::*;
 
-mod state_machine;
-
-use state_machine::StateMachine;
+use lib_samus::StateMachine;
 
 // proc_samus::samus_poses!([0x00, 0x01, 0x02, 0x09, 0x0A, 0x0B]);
 proc_samus::samus_poses!([]);

@@ -1,9 +1,9 @@
 #![feature(proc_macro)]
 extern crate proc_samus;
-extern crate sm;
+extern crate lib_samus;
 extern crate core;
 
-use sm::pose::*;
+use lib_samus::pose::*;
 
 proc_samus::samus_poses!([0x00, 0x01, 0x02, 0x09, 0x0A]);
 
