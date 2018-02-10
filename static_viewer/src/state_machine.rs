@@ -6,9 +6,9 @@ pub struct StateMachine<'a> {
 }
 
 impl<'a> StateMachine<'a> {
-    pub fn new(initial: &'a Pose<'a>, lookup: fn(usize) -> &'a Pose<'a>) -> Self {
+    pub fn new(initial: usize, lookup: fn(usize) -> &'a Pose<'a>) -> Self {
         StateMachine {
-            current: initial.clone(),
+            current: (lookup)(initial).clone(),
             lookup,
         }
     }
@@ -21,5 +21,17 @@ impl<'a> StateMachine<'a> {
                 self.next()
             },
         }
+    }
+
+    pub fn goto(&mut self, state: usize) {
+        self.current = (self.lookup)(state).clone();
+    }
+
+    pub fn pose_name(&self) -> &'a str {
+        self.current.name
+    }
+
+    pub fn pose_state(&self) -> usize {
+        self.current.id
     }
 }
