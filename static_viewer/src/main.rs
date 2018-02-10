@@ -7,12 +7,16 @@ use std::{thread, time};
 use piston_window::*;
 use sm::pose::*;
 
-proc_samus::samus_poses!([0x0B]);
+mod state_machine;
+
+use state_machine::StateMachine;
+
+proc_samus::samus_poses!([0x00, 0x01, 0x02, 0x09, 0x0A, 0x0B]);
 
 proc_samus::samus_palettes!();
 
 fn main() {
-    let mut pose = poses::lookup(0x0B).clone();
+    let mut samus = StateMachine::new(poses::lookup(0x0B), poses::lookup);
 
     let opengl = OpenGL::V3_2;
     let zoom = 4usize;
@@ -36,11 +40,7 @@ fn main() {
             if let Some(_) = event.render_args() {
                 clear([0.0; 4], graphics);
 
-                let (composite, duration) = if let Next::Frame(f, d) = pose.next() {
-                    (f, d)
-                } else {
-                    unreachable!()
-                };
+                let (composite, duration) = samus.next();
 
                 let offset_x = window_width / 2 - composite.zero_x as usize;
                 let offset_y = window_height / 2 - composite.zero_y as usize;

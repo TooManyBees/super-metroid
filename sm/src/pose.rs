@@ -107,7 +107,7 @@ impl<'a> Pose<'a> {
         }
     }
 
-    pub fn next(&mut self) -> Next {
+    pub fn next(&mut self) -> Next<'a> {
         if self.cursor >= self.length {
             match self.terminator {
                 Terminator::Loop => {
