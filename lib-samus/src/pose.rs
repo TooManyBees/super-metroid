@@ -81,7 +81,7 @@ impl<'a> Pose<'a> {
     }
 
     pub fn next(&mut self) -> Next<'a> {
-        if self.cursor >= self.length {
+        let next = if self.cursor >= self.length {
             match self.terminator {
                 Terminator::Loop => {
                     self.cursor = 0;
@@ -92,12 +92,14 @@ impl<'a> Pose<'a> {
                     Next::Frame(&self.frames[self.cursor], self.durations[self.cursor])
                 },
                 Terminator::Stop => Next::Frame(&self.frames[self.cursor-1], self.durations[self.cursor-1]), //optimization?
-                Terminator::TransitionTo(pose) => Next::NewPose(pose),
+                Terminator::TransitionTo(pose) => {
+                    Next::NewPose(pose)
+                },
             }
         } else {
-            let f = Next::Frame(&self.frames[self.cursor], self.durations[self.cursor]);
-            self.cursor = (self.cursor + 1) % self.length;
-            f
-        }
+            Next::Frame(&self.frames[self.cursor], self.durations[self.cursor])
+        };
+        self.cursor = (self.cursor + 1) % self.length;
+        next
     }
 }
