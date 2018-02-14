@@ -92,14 +92,12 @@ impl<'a> Pose<'a> {
                     Next::Frame(&self.frames[self.cursor], self.durations[self.cursor])
                 },
                 Terminator::Stop => Next::Frame(&self.frames[self.cursor-1], self.durations[self.cursor-1]), //optimization?
-                Terminator::TransitionTo(pose) => {
-                    Next::NewPose(pose)
-                },
+                Terminator::TransitionTo(pose) => Next::NewPose(pose),
             }
         } else {
             Next::Frame(&self.frames[self.cursor], self.durations[self.cursor])
         };
-        self.cursor = (self.cursor + 1) % self.length;
+        self.cursor = self.cursor + 1;
         next
     }
 }
