@@ -5,17 +5,62 @@ extern crate piston_window;
 
 use std::{time};
 use piston_window::*;
-use lib_samus::pose::*;
 
+use lib_samus::pose::*;
 use lib_samus::StateMachine;
 
-// proc_samus::samus_poses!([0x00, 0x01, 0x02, 0x09, 0x0A, 0x0B]);
-proc_samus::samus_poses!([]);
+proc_samus::samus_poses!([
+    0x00, // elevator pose
+    0x01, // facing_right_normal
+    0x02, // facing_left_normal
+    0x09, // moving_right_not_aiming
+    0x0A, // moving_left_not_aiming
+    0x0B, // moving_right_gun_extended_not_aiming
+    0x0C, // moving_left_gun_extended_not_aiming
+    0x13, // jump_facing_right_gun_extended_not_aiming_or_moving
+    0x14, // jump_facing_left_gun_extended_not_aiming_or_moving
+    0x19, // spin_jump_right
+    0x1A, // spin_jump_left
+    0x1B, // space_jump_right
+    0x1C, // space_jump_left
+    0x25, // standing_turn_right_to_left
+    0x26, // standing_turn_left_to_right
+    0x27, // crouching_right
+    0x28, // crouching_left
+    0x29, // falling_right_normal
+    0x2A, // falling_left_normal
+    0x2F, // jumping_turn_right_to_left
+    0x30, // jumping_turn_left_to_right
+    0x35, // crouch_transition_facing_right
+    0x36, // crouch_transition_facing_left
+    0x3B, // standing_from_crouch_facing_right
+    0x3C, // standing_from_crouch_facing_left
+    0x43, // crouching_turn_right_to_left
+    0x44, // crouching_turn_left_to_right
+    0x49, // moonwalk_right_facing_left
+    0x4A, // moonwalk_left_facing_right
+    0x4B, // jump_transition_stand_crouch_facing_right
+    0x4C, // jump_transition_stand_crouch_facing_left
+    0x4D, // jump_facing_right_gun_not_extended_not_aiming_or_moving
+    0x4E, // jump_facing_left_gun_not_extended_not_aiming_or_moving
+    0x51, // jump_forward_facing_right_gun_extended
+    0x52, // jump_forward_facing_left_gun_extended
+    0x67, // falling_facing_right_fired_a_shot
+    0x68, // falling_facing_left_fired_a_shot
+    0x81, // screw_attack_right
+    0x82, // screw_attack_left
+    0x87, // falling_turn_right_to_left
+    0x88, // falling_turn_left_to_right
+    0xA4, // landing_facing_right
+    0xA5, // landing_facing_left
+    0xA6, // landing_spinjump_facing_right
+    0xA7, // landing_spinjump_facing_left
+]);
 
 proc_samus::samus_palettes!();
 
 fn main() {
-    let mut samus = StateMachine::new(0x0B, poses::lookup);
+    let mut samus = StateMachine::new(0x00, poses::lookup);
 
     let opengl = OpenGL::V3_2;
     let zoom = 4usize;
@@ -44,21 +89,18 @@ fn main() {
 
     while let Some(event) = window.next() {
         if let Some(b) = event.press_args() {
-            match b {
+            let input = match b {
                 Button::Keyboard(Key::Right) => {
-                    let next_pose = samus.pose_state() + 1;
-                    samus.goto(next_pose);
+                    Some((samus.current_input() - ControllerInput::Left) | ControllerInput::Right)
                 },
                 Button::Keyboard(Key::Left) => {
-                    let state = samus.pose_state();
-                    let next_pose = if state == 0 {
-                        0
-                    } else {
-                        state - 1
-                    };
-                    samus.goto(next_pose);
+                    Some((samus.current_input() - ControllerInput::Right) | ControllerInput::Left)
                 },
-                _ => {},
+                _ => None,
+            };
+            if let Some(input) = input {
+                next_frame_time = time::Instant::now();
+                samus.input(input);
             }
         }
 

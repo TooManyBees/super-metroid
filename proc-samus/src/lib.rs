@@ -23,7 +23,7 @@ use byteorder::{ByteOrder, LittleEndian};
 
 use sm::{snes, samus, frame_map, util};
 use snes::{Rom, PcAddress};
-use lib_samus::pose::{Pose, Frame};
+use lib_samus::pose::Frame;
 use frame_map::FrameMap;
 use util::{zip3, bgr555_rgb888};
 
@@ -51,6 +51,7 @@ fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
     let sequence = samus::lookup_frame_sequence(&ROM, state);
     let durations = sequence.0;
     let sequence_terminator = sequence.1;
+    let transitions = sequence.2;
     let sequence_len = durations.len();
 
     let tile_maps = samus::tilemaps(&ROM, state, durations.len());
@@ -71,6 +72,7 @@ fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
             id: #state,
             terminator: #sequence_terminator,
             durations: &[#(#durations),*],
+            transitions: &[#(#transitions),*],
             length: #sequence_len,
             cursor: 0,
             frames: &[#(#borrow_frames),*],

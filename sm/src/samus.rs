@@ -4,8 +4,7 @@ use snes::{Rom, PcAddress, SnesAddress};
 use byteorder::{ByteOrder, LittleEndian};
 use snes_bitplanes::{Bitplanes, Tile};
 use frame_map::FrameMap;
-use lib_samus::pose::{Terminator, Sequence};
-// use util::print_hex;
+use lib_samus::pose::{ControllerInput, Terminator, Transition};
 
 const BASE_TABLES_POINTER: SnesAddress = SnesAddress(0x92808D);
 const BOTTOM_HALF_POINTERS: SnesAddress = SnesAddress(0x92945D);
@@ -18,6 +17,8 @@ const FRAME_PROGRESSION_TABLES: SnesAddress = SnesAddress(0x920000);
 
 const FRAME_DURATION_TABLE: SnesAddress = SnesAddress(0x91B010);
 const FRAME_DURATION_START: SnesAddress = SnesAddress(0x910000);
+
+const POSE_TRANSITION_TABLE: SnesAddress = SnesAddress(0x919EE2);
 
 const TOP_DMA_LOOKUP: SnesAddress = SnesAddress(0x92D91E);
 const BOTTOM_DMA_LOOKUP: SnesAddress = SnesAddress(0x92D938);
@@ -46,6 +47,8 @@ pub fn graphics(rom: &Rom, state: usize, num_frames: usize) -> Vec<Vec<Tile>> {
     data.into_iter().map(|(t, b)| generate_graphics(rom, t, b)).collect()
 }
 
+pub struct Sequence<'a>(pub &'a [u8], pub Terminator, pub Vec<Transition>);
+
 pub fn lookup_frame_sequence<'a>(rom: &'a Rom, state: usize) -> Sequence<'a> {
     let addr = LittleEndian::read_u16(&rom.read(FRAME_DURATION_TABLE.to_pc() + state * 2, 2)) as u32;
     let mut len = 0;
@@ -68,7 +71,29 @@ pub fn lookup_frame_sequence<'a>(rom: &'a Rom, state: usize) -> Sequence<'a> {
         };
         len += 1;
     };
-    Sequence(&rom.read((FRAME_DURATION_START + addr).to_pc(), len), term)
+    let transitions = lookup_pose_transitions(rom, state);
+    Sequence(&rom.read((FRAME_DURATION_START + addr).to_pc(), len), term, transitions)
+}
+
+pub fn lookup_pose_transitions<'a>(rom: &'a Rom, state: usize) -> Vec<Transition> {
+    let offset = LittleEndian::read_u16(&rom.read(POSE_TRANSITION_TABLE.to_pc() + state * 2, 2)) as u32;
+    let addr = (FRAME_DURATION_START + offset).to_pc();
+    let mut num_transitions = 0;
+    for (n, bytes) in rom[addr..].chunks(6).enumerate() {
+        if bytes[0] == 0xFF && bytes[1] == 0xFF {
+            num_transitions = n;
+            break;
+        }
+    }
+
+    rom[addr..addr + (6 * num_transitions)].chunks(6).map(|slice| {
+        let controls_1 = LittleEndian::read_u16(&slice[0..2]);
+        let controls_2 = LittleEndian::read_u16(&slice[2..4]);
+        let input = ControllerInput::from_bits_truncate(controls_1 | controls_2);
+        let to_pose = LittleEndian::read_u16(&slice[4..6]) as u8;
+
+        Transition { input: input, to_pose }
+    }).collect()
 }
 
 fn lookup_tilemap_table<'a>(rom: &'a Rom, state: usize, num_frames: usize) -> (&'a [u8], &'a [u8]) {

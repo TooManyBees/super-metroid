@@ -1,8 +1,26 @@
 #[cfg(feature="codegen")] use quote::{Tokens, ToTokens};
+pub use controller_input::ControllerInput;
 
-pub struct Sequence<'a>(pub &'a [u8], pub Terminator);
+pub struct Transition {
+    pub input: ControllerInput,
+    pub to_pose: u8,
+}
 
-#[derive(Copy, Clone)]
+#[cfg(feature="codegen")]
+impl ToTokens for Transition {
+    fn to_tokens(&self, tokens: &mut Tokens) {
+        let input_bits = self.input.bits();
+        let to_pose = self.to_pose;
+        tokens.append_all(quote!{
+            Transition {
+                input: ControllerInput { bits: #input_bits },
+                to_pose: #to_pose,
+            }
+        });
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum Terminator {
     Loop,
     Backtrack(u8),
@@ -63,23 +81,12 @@ pub struct Pose<'a> {
     pub terminator: Terminator,
     pub durations: &'a [u8],
     pub frames: &'a [Frame<'a>],
+    pub transitions: &'a [Transition],
     pub length: usize,
     pub cursor: usize,
 }
 
 impl<'a> Pose<'a> {
-    pub fn new(id: usize, name: &'a str, frames: &'a [Frame], sequence: &'a Sequence) -> Self {
-        Pose {
-            name,
-            id,
-            terminator: sequence.1,
-            durations: sequence.0,
-            length: frames.len(),
-            frames,
-            cursor: 0,
-        }
-    }
-
     pub fn next(&mut self) -> Next<'a> {
         let next = if self.cursor >= self.length {
             match self.terminator {
