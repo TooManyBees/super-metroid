@@ -86,6 +86,7 @@ fn main() {
     let mut current_frame: &Frame = &Frame { buffer: &[], width: 0, height: 0, zero_x: 0, zero_y: 0 };
     let mut current_pose_id = 0;
     let mut current_pose_name: &str = "blank!";
+    let mut current_input = ControllerInput::empty();
 
     while let Some(event) = window.next() {
         if let Some(b) = event.press_args() {
@@ -99,8 +100,11 @@ fn main() {
                 _ => None,
             };
             if let Some(input) = input {
-                next_frame_time = time::Instant::now();
-                samus.input(input);
+                current_input = input;
+                println!("{:?}", current_input);
+                if samus.input(input) {
+                    next_frame_time = time::Instant::now();
+                }
             }
         }
 

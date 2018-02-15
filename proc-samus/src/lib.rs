@@ -116,18 +116,23 @@ pub fn samus_poses(input: TokenStream) -> TokenStream {
     let poses = parse_chosen_poses(input);
     let poses_tokens: Vec<_> = poses.iter().map(|&(name, state)| samus_pose_struct_tokens(name, state)).collect();
 
-    let mut arr = vec![0usize; NUM_POSES];
+    let mut arr = vec![255u8; NUM_POSES];
     for (n, &(_name, state)) in poses.iter().enumerate() {
-        arr[state] = n;
+        arr[state] = n as u8;
     }
 
     TokenStream::from(quote!{
         mod poses {
             static POSES: &[Pose] = &[#(#poses_tokens),*];
-            static LOOKUP: &[usize] = &[#(#arr), *];
+            static LOOKUP: &[u8] = &[#(#arr), *];
 
-            pub fn lookup(n: usize) -> &'static Pose<'static> {
-                &POSES[LOOKUP[n]]
+            pub fn lookup(n: usize) -> Option<&'static Pose<'static>> {
+                let index = LOOKUP[n];
+                if index == 255 {
+                    None
+                } else {
+                    Some(&POSES[index as usize])
+                }
             }
         }
     })

@@ -4,13 +4,13 @@ use controller_input::ControllerInput;
 pub struct StateMachine<'a> {
     current: Pose<'a>,
     input: ControllerInput,
-    lookup: fn(usize) -> &'a Pose<'a>,
+    lookup: fn(usize) -> Option<&'a Pose<'a>>,
 }
 
 impl<'a> StateMachine<'a> {
-    pub fn new(initial: usize, lookup: fn(usize) -> &'a Pose<'a>) -> Self {
+    pub fn new(initial: usize, lookup: fn(usize) -> Option<&'a Pose<'a>>) -> Self {
         StateMachine {
-            current: (lookup)(initial).clone(),
+            current: (lookup)(initial).expect("Passed a nonexistant initial pose state to StateMachine::new").clone(),
             input: ControllerInput::empty(),
             lookup,
         }
@@ -26,13 +26,16 @@ impl<'a> StateMachine<'a> {
         }
     }
 
-    pub fn input(&mut self, pressed: ControllerInput) {
+    pub fn input(&mut self, pressed: ControllerInput) -> bool {
         if pressed != self.input {
             if let Some(transition) = self.current.transitions.iter().find(|t| t.input == pressed) {
-                self.input = pressed;
-                self.goto(transition.to_pose as usize);
+                if self.goto(transition.to_pose as usize) {
+                    self.input = pressed;
+                    return true
+                }
             }
         }
+        false
     }
 
     pub fn fall(&mut self) {
@@ -45,8 +48,14 @@ impl<'a> StateMachine<'a> {
     }
 
     #[inline]
-    pub fn goto(&mut self, state: usize) {
-        self.current = (self.lookup)(state).clone();
+    pub fn goto(&mut self, state: usize) -> bool {
+        match (self.lookup)(state) {
+            Some(pose) => {
+                self.current = pose.clone();
+                true
+            },
+            None => false,
+        }
     }
 
     #[inline]
