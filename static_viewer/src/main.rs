@@ -59,6 +59,18 @@ proc_samus::samus_poses!([
 
 proc_samus::samus_palettes!();
 
+fn get_input(key: Button) -> Option<ControllerInput> {
+    match key {
+        Button::Keyboard(Key::Right) => Some(ControllerInput::Right),
+        Button::Keyboard(Key::Left) => Some(ControllerInput::Left),
+        Button::Keyboard(Key::Up) => Some(ControllerInput::Up),
+        Button::Keyboard(Key::Down) => Some(ControllerInput::Down),
+        Button::Keyboard(Key::Space) => Some(ControllerInput::Jump),
+        Button::Keyboard(Key::S) => Some(ControllerInput::Shoot),
+        _ => None,
+    }
+}
+
 fn main() {
     let mut samus = StateMachine::new(0x00, poses::lookup);
 
@@ -90,14 +102,7 @@ fn main() {
 
     while let Some(event) = window.next() {
         if let Some(b) = event.press_args() {
-            let input = match b {
-                Button::Keyboard(Key::Right) => Some(current_input | ControllerInput::Right),
-                Button::Keyboard(Key::Left) => Some(current_input | ControllerInput::Left),
-                Button::Keyboard(Key::Up) => Some(current_input | ControllerInput::Up),
-                Button::Keyboard(Key::Down) => Some(current_input | ControllerInput::Down),
-                Button::Keyboard(Key::Space) => Some(current_input | ControllerInput::Jump),
-                _ => None,
-            };
+            let input = get_input(b).map(|input| current_input | input);
             if let Some(input) = input {
                 current_input = input;
                 println!("{:?}", current_input);
@@ -106,15 +111,9 @@ fn main() {
                 }
             }
         }
+
         if let Some(b) = event.release_args() {
-            let input = match b {
-                Button::Keyboard(Key::Right) => Some(current_input - ControllerInput::Right),
-                Button::Keyboard(Key::Left) => Some(current_input - ControllerInput::Left),
-                Button::Keyboard(Key::Up) => Some(current_input - ControllerInput::Up),
-                Button::Keyboard(Key::Down) => Some(current_input - ControllerInput::Down),
-                Button::Keyboard(Key::Space) => Some(current_input - ControllerInput::Jump),
-                _ => None,
-            };
+            let input = get_input(b).map(|input| current_input - input);
             if let Some(input) = input {
                 current_input = input;
                 println!("{:?}", current_input);
