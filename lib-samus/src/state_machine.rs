@@ -40,13 +40,53 @@ impl<'a> StateMachine<'a> {
         false
     }
 
-    pub fn fall(&mut self) {
-        // start falling in same direction
+    // fn stop(&mut self, input: ControllerInput) -> bool {
+    //     match 
+    // }
+
+    pub fn fall(&mut self) -> bool {
+        let next_pose = match self.current.id {
+            0x13 => 0x67, // right jump gun extended
+            0x15 => 0x2B, // right jump aiming up
+            0x17 => 0x2D, // right jump aiming down
+            0x30 => 0x29, // turning right
+            0x4D => 0x29, // right jump gun not extended
+            0x51 => 0x67, // right jump gun extended
+            0x14 => 0x68, // left jump gun extended
+            0x16 => 0x2C, // left jump aiming up
+            0x18 => 0x2E, // left jump aiming down
+            0x2F => 0x2A, // turning left
+            0x4E => 0x2A, // left jump gun not extended
+            0x52 => 0x68, // left jump gun extended
+            _ => return false,
+        };
+        self.goto(next_pose)
     }
 
-    pub fn land(&mut self) {
-        // land from jump in same direction
-        // if not jumping or falling, no op
+    pub fn land(&mut self) -> bool {
+        let next_pose = match self.current.id {
+            0x19 | 0x1B | 0x81 => 0xA6, // spin/space/screw jump right
+            0x1A | 0x1C | 0x82 => 0xA7, // spin/space/screw jump left
+
+            0x29 | 0x30 => 0xA4, // falling right, falling turning right
+            0x2A | 0x2F => 0xA5, // falling left, falling turning left
+            0x2B => 0xE0, // falling right aiming up
+            0x2C => 0xE1, // falling left aming up
+            0x2D => 0xA4, // falling right aiming down
+            0x2E => 0xA5, // falling left aiming down
+
+            0x6D | 0x94 => 0xE2, // falling aiming upright
+            0x6E | 0x93 => 0xE3, // falling aiming upleft
+            0x6F | 0x96 => 0xE4, // falling aiming downright
+            0x70 | 0x95 => 0xE5, // falling aiming downleft
+
+            0x67 => 0xE6, // falling right firing
+            0x68 => 0xE7, // falling left firing
+            _ => {
+                return false;
+            },
+        };
+        self.goto(next_pose)
     }
 
     #[inline]

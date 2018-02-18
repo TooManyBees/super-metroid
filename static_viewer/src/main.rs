@@ -55,6 +55,8 @@ proc_samus::samus_poses!([
     0xA5, // landing_facing_left
     0xA6, // landing_spinjump_facing_right
     0xA7, // landing_spinjump_facing_left
+    0xE6, // landing_facing_right_firing
+    0xE7, // landing_facing_left_firing
 ]);
 
 proc_samus::samus_palettes!();
@@ -102,13 +104,21 @@ fn main() {
 
     while let Some(event) = window.next() {
         if let Some(b) = event.press_args() {
-            let input = get_input(b).map(|input| current_input | input);
-            if let Some(input) = input {
-                current_input = input;
-                println!("{:?}", current_input);
-                if samus.input(input) {
-                    next_frame_time = time::Instant::now();
+            let transitioned = match b {
+                Button::Keyboard(Key::F) => samus.fall(),
+                Button::Keyboard(Key::L) => samus.land(),
+                _ => {
+                    get_input(b)
+                    .map(|input| {
+                        current_input = input;
+                        println!("{:?}", current_input);
+                        samus.input(current_input)
+                    })
+                    .unwrap_or(false)
                 }
+            };
+            if transitioned {
+                next_frame_time = time::Instant::now();
             }
         }
 
