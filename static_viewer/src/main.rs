@@ -91,12 +91,28 @@ fn main() {
     while let Some(event) = window.next() {
         if let Some(b) = event.press_args() {
             let input = match b {
-                Button::Keyboard(Key::Right) => {
-                    Some((samus.current_input() - ControllerInput::Left) | ControllerInput::Right)
-                },
-                Button::Keyboard(Key::Left) => {
-                    Some((samus.current_input() - ControllerInput::Right) | ControllerInput::Left)
-                },
+                Button::Keyboard(Key::Right) => Some(current_input | ControllerInput::Right),
+                Button::Keyboard(Key::Left) => Some(current_input | ControllerInput::Left),
+                Button::Keyboard(Key::Up) => Some(current_input | ControllerInput::Up),
+                Button::Keyboard(Key::Down) => Some(current_input | ControllerInput::Down),
+                Button::Keyboard(Key::Space) => Some(current_input | ControllerInput::Jump),
+                _ => None,
+            };
+            if let Some(input) = input {
+                current_input = input;
+                println!("{:?}", current_input);
+                if samus.input(input) {
+                    next_frame_time = time::Instant::now();
+                }
+            }
+        }
+        if let Some(b) = event.release_args() {
+            let input = match b {
+                Button::Keyboard(Key::Right) => Some(current_input - ControllerInput::Right),
+                Button::Keyboard(Key::Left) => Some(current_input - ControllerInput::Left),
+                Button::Keyboard(Key::Up) => Some(current_input - ControllerInput::Up),
+                Button::Keyboard(Key::Down) => Some(current_input - ControllerInput::Down),
+                Button::Keyboard(Key::Space) => Some(current_input - ControllerInput::Jump),
                 _ => None,
             };
             if let Some(input) = input {
