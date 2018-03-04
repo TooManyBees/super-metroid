@@ -1,10 +1,10 @@
 #![feature(proc_macro)]
 extern crate proc_samus;
 extern crate lib_samus;
-extern crate piston_window;
+extern crate minifb;
 
-use std::{time};
-use piston_window::*;
+use std::{time, thread};
+use minifb::{Key, KeyRepeat, Scale, WindowOptions, Window};
 
 use lib_samus::pose::*;
 use lib_samus::StateMachine;
@@ -61,118 +61,85 @@ proc_samus::samus_poses!([
 
 proc_samus::samus_palettes!();
 
-fn get_input(key: Button) -> Option<ControllerInput> {
-    match key {
-        Button::Keyboard(Key::Right) => Some(ControllerInput::Right),
-        Button::Keyboard(Key::Left) => Some(ControllerInput::Left),
-        Button::Keyboard(Key::Up) => Some(ControllerInput::Up),
-        Button::Keyboard(Key::Down) => Some(ControllerInput::Down),
-        Button::Keyboard(Key::Space) => Some(ControllerInput::Jump),
-        Button::Keyboard(Key::S) => Some(ControllerInput::Shoot),
-        _ => None,
-    }
-}
+const WIDTH: usize = 64;
+const HEIGHT: usize = 64;
 
 fn main() {
     let mut samus = StateMachine::new(0x00, poses::lookup);
 
-    let opengl = OpenGL::V3_2;
-    let zoom = 4usize;
-    let (window_width, window_height) = (64, 64);
+    let mut window = Window::new("samus", WIDTH, HEIGHT, WindowOptions {
+        scale: Scale::X4,
+        ..Default::default()
+    }).expect("couldn't create window!");
 
-    let mut window: PistonWindow = WindowSettings::new("samus",
-        [(window_width * zoom) as u32, (window_height * zoom) as u32])
-            .exit_on_esc(true)
-            .opengl(opengl)
-            .vsync(true)
-            .build()
-            .unwrap();
-
-    let mut palette = [(0f32, 0f32, 0f32); 32];
+    let mut palette = [(0u32, 0u32, 0u32); 32];
     for (i, c) in (&palette::PALETTE).iter().enumerate() {
-        palette[i] = (c.0 as f32 / 255.0, c.1 as f32 / 255.0, c.2 as f32 / 255.0);
+        palette[i] = (c.0 as u32, c.1 as u32, c.2 as u32);
     }
 
-    let factory = window.factory.clone();
-    let mut glyphs = Glyphs::new("../data/cour.ttf", factory, TextureSettings::new()).expect("font failed");
-
-    let mut next_frame_time = time::Instant::now();
+    let buffer: &mut [u32] = &mut [0; WIDTH * HEIGHT];
     let mut current_frame: &Frame = &Frame { buffer: &[], width: 0, height: 0, zero_x: 0, zero_y: 0 };
     let mut current_pose_id = 0;
     let mut current_pose_name: &str = "blank!";
-    let mut current_input = ControllerInput::empty();
 
-    while let Some(event) = window.next() {
-        if let Some(b) = event.press_args() {
-            let transitioned = match b {
-                Button::Keyboard(Key::F) => samus.fall(),
-                Button::Keyboard(Key::L) => samus.land(),
-                _ => {
-                    get_input(b)
-                    .map(|input| {
-                        current_input = input;
-                        println!("{:?}", current_input);
-                        samus.input(current_input)
-                    })
-                    .unwrap_or(false)
-                }
-            };
-            if transitioned {
-                next_frame_time = time::Instant::now();
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+            let mut current_input = ControllerInput::empty();
+            if window.is_key_pressed(Key::Right, KeyRepeat::No) {
+                current_input |= ControllerInput::Right;
             }
-        }
-
-        if let Some(b) = event.release_args() {
-            let input = get_input(b).map(|input| current_input - input);
-            if let Some(input) = input {
-                current_input = input;
-                println!("{:?}", current_input);
-                if samus.input(input) {
-                    next_frame_time = time::Instant::now();
-                }
+            if window.is_key_pressed(Key::Left, KeyRepeat::No) {
+                current_input |= ControllerInput::Left;
             }
-        }
-
-        if let Some(_) = event.update_args() {
-            let now = time::Instant::now();
-            if now >= next_frame_time {
-
-                let (composite, duration) = samus.next();
-                current_frame = composite;
-                current_pose_id = samus.pose_state();
-                current_pose_name = samus.pose_name();
-
-                let d = time::Duration::from_millis(1000u64 / 30u64 * duration as u64 );
-                next_frame_time = now + d;
+            if window.is_key_pressed(Key::Up, KeyRepeat::No) {
+                current_input |= ControllerInput::Up;
             }
-        }
+            if window.is_key_pressed(Key::Down, KeyRepeat::No) {
+                current_input |= ControllerInput::Down;
+            }
+            if window.is_key_pressed(Key::Space, KeyRepeat::No) {
+                current_input |= ControllerInput::Jump;
+            }
+            if !current_input.is_empty() {
+                samus.input(current_input);
+            }
+            if window.is_key_pressed(Key::F, KeyRepeat::No) {
+                samus.fall();
+            }
+            if window.is_key_pressed(Key::L, KeyRepeat::No) {
+                samus.land();
+            }
 
-        window.draw_2d(&event, |context, graphics| {
-            clear([0.0; 4], graphics);
+            let (current_frame, duration) = samus.next();
+            current_pose_id = samus.pose_state();
+            current_pose_name = samus.pose_name();
 
-            let offset_x = window_width / 2 - current_frame.zero_x as usize;
-            let offset_y = window_height / 2 - current_frame.zero_y as usize;
+            let d = time::Duration::from_millis(1000u64 / 30u64 * duration as u64 );
 
-            for (i, p) in current_frame.buffer.iter().enumerate() {
-                if *p == 0 {
+            let offset_x = WIDTH / 2 - current_frame.zero_x as usize;
+            let offset_y = HEIGHT / 2 - current_frame.zero_y as usize;
+
+            let top = offset_y;
+            let bottom = offset_y + current_frame.height as usize;
+            let left = offset_x;
+            let right = offset_x + current_frame.width as usize;
+
+            for (i, p) in buffer.iter_mut().enumerate() {
+                let (cx, cy) = (i % WIDTH, i / WIDTH);
+                if cy < top || cy >= bottom || cx < left || cx >= right {
+                    *p = 0;
                     continue;
                 }
-                let (px, py) = (offset_x + i % current_frame.width as usize, offset_y + i / current_frame.width as usize);
-                let (r, g, b) = palette[*p as usize];
-                rectangle(
-                    [r, g, b, 1.0],
-                    [(px*zoom) as f64, (py*zoom) as f64, zoom as f64, zoom as f64],
-                    context.transform,
-                    graphics,
-                )
+                let j = (cy - top) * current_frame.width as usize + cx - left; // index in frame
+                let palette_index = current_frame.buffer[j];
+                *p = if palette_index == 0 {
+                    0
+                } else {
+                    let pixel = palette[palette_index as usize];
+                    0xFF << 24 | (pixel.0 << 16) | (pixel.1 << 8) | (pixel.2)
+                };
             }
-            Text::new_color([1.0, 1.0, 1.0, 1.0], 10).draw(
-                &format!("{:02X} {}", current_pose_id, current_pose_name),
-                &mut glyphs,
-                &context.draw_state,
-                context.transform.trans(0.0, 12.0),
-                graphics,
-            ).expect("Couldn't draw pose name");
-        });
+
+            window.update_with_buffer(buffer).unwrap();
+            thread::sleep(d);
     }
 }

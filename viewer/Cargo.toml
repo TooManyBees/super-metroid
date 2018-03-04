@@ -8,5 +8,5 @@ publish = false
 sm = { path = "../sm" }
 snes-bitplanes = { path = "../snes-bitplanes" }
 byteorder = "1.2"
-piston_window = "0.75"
+# piston_window = "0.75"
 gif = "0.9"
