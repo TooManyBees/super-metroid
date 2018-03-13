@@ -5,6 +5,6 @@ authors = ["Jess Bees <jesse@toomanybees.com>"]
 publish = false
 
 [dependencies]
-piston_window = "0.75"
+piston_window = "0.77"
 lib-samus = { path = "../lib-samus" }
 proc-samus = { path = "../proc-samus" }
