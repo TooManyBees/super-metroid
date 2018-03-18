@@ -23,7 +23,7 @@ use byteorder::{ByteOrder, LittleEndian};
 
 use sm::{snes, samus, frame_map, util};
 use snes::{Rom, PcAddress};
-use lib_samus::pose::Frame;
+use lib_samus::pose::Terminator;
 use frame_map::FrameMap;
 use util::{zip3, bgr555_rgb888};
 
@@ -58,13 +58,42 @@ fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
     let tile_sets = samus::graphics(&ROM, state, durations.len());
     let frames: Vec<_> = zip3(tile_maps, &tile_sets, durations)
         .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
-    let borrow_frames: Vec<_> = frames.iter().map(|f| Frame {
-        buffer: &f.buffer,
-        width: f.width,
-        height: f.height,
-        zero_x: f.zero_x,
-        zero_y: f.zero_y,
+
+    // Sure wish we could use lib-samus with the codegen feature here...
+    let borrow_frames: Vec<_> = frames.into_iter().map(|f| {
+        let buffer = f.buffer;
+        let width = f.width;
+        let height = f.height;
+        let zero_x = f.zero_x;
+        let zero_y = f.zero_y;
+        quote!{
+            Frame {
+                buffer: &[#(#buffer),*],
+                width: #width,
+                height: #height,
+                zero_x: #zero_x,
+                zero_y: #zero_y,
+            }
+        }
     }).collect();
+
+    let transitions: Vec<_> = transitions.into_iter().map(|t| {
+        let input_bits = t.input.bits();
+        let to_pose = t.to_pose;
+        quote!{
+            Transition {
+                input: ControllerInput { bits: #input_bits },
+                to_pose: #to_pose,
+            }
+        }
+    }).collect();
+
+    let sequence_terminator = match sequence_terminator {
+        Terminator::Loop => quote!(Terminator::Loop),
+        Terminator::Backtrack(ref b) => quote!(Terminator::Backtrack(#b)),
+        Terminator::TransitionTo(ref t) => quote!(Terminator::TransitionTo(#t)),
+        Terminator::Stop => quote!(Terminator::Stop),
+    };
 
     quote!{
         Pose {

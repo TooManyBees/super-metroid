@@ -1,7 +1,6 @@
 #![feature(proc_macro)]
 extern crate proc_samus;
 extern crate lib_samus;
-extern crate core;
 
 use lib_samus::pose::*;
 

@@ -8,7 +8,7 @@ proc-macro = true
 
 [dependencies]
 sm = { path = "../sm" }
-lib-samus = { path = "../lib-samus", features = [ "codegen" ] }
+lib-samus = { path = "../lib-samus" }
 proc-macro2 = "0.2"
 syn = { version = "0.12", features = [ "extra-traits" ] }
 quote = "0.4"
