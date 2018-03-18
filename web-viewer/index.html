@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <canvas id="canvas" width="64" height="64"></canvas>
+    <script type="text/javascript">
+        fetch("web_samus.wasm")
+        .then(r => r.arrayBuffer())
+        .then(r => WebAssembly.instantiate(r))
+        .then(wasmModule => {
+        try {
+            const canvas = document.getElementById("canvas");    
+            const ctx = canvas.getContext("2d");
+            const width = canvas.width;
+            const height = canvas.height;
+            const length = width * height * 4;
+
+            const wasmExports = wasmModule.instance.exports;
+
+            const buffer = wasmExports.allocate(length);
+            const array = new Uint8ClampedArray(wasmExports.memory.buffer, buffer, length);
+            const image = new ImageData(array, width, height);
+
+            const stateMachinePtr = wasmExports.init();
+
+            let nextFrameTime = null;
+
+            function keydown(key) {
+                const success =  wasmExports.input(stateMachinePtr, key);
+                if (success) nextFrameTime = null;
+            }
+
+            function keyup(key) {
+                const success =  wasmExports.input_end(stateMachinePtr, key);
+                if (success) nextFrameTime = null;
+            }
+
+            function nextFrame() {
+               return wasmExports.next_frame(stateMachinePtr, buffer, width, height);
+            }
+
+            function fall() {
+                const success =  wasmExports.fall(stateMachinePtr);
+                if (success) nextFrameTime = null;
+            }
+
+            function land() {
+                const success =  wasmExports.land(stateMachinePtr);
+                if (success) nextFrameTime = null;
+            }
+
+            function go(now) {
+                if (!nextFrameTime) nextFrameTime = now;
+                if (now >= nextFrameTime) {
+                    nextFrameTime += nextFrame();
+                    ctx.putImageData(image, 0, 0);
+                }
+                window.requestAnimationFrame(go);
+            }
+
+            const samus = {
+                go,
+                fall,
+                land,
+            };
+
+            window.addEventListener('keydown', function(event) {
+                if (!event.repeat) {
+                    if (event.key === "l") {
+                        land();
+                    } else if (event.key === "f") {
+                        fall();
+                    } else {
+                        keydown(event.keyCode);
+                    }
+                }
+            })
+
+            window.addEventListener('keyup', function(event) {
+                keyup(event.keyCode);
+            })
+
+            window.samus = samus;
+        } catch (e) {
+            console.error(e);
+        }});
+    </script>
+</body>
+</html>

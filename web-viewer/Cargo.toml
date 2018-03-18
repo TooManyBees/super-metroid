@@ -1,0 +1,12 @@
+[package]
+name = "web-samus"
+version = "0.1.0"
+authors = ["Jess Bees <jesse@toomanybees.com>"]
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+lib-samus = { path = "../lib-samus" }
+proc-samus = { path = "../proc-samus" }

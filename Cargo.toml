@@ -1,2 +1,2 @@
 [workspace]
-members = [ "snes-bitplanes", "sm", "lib-samus", "proc-samus", "viewer", "static_viewer" ]
+members = [ "snes-bitplanes", "sm", "lib-samus", "proc-samus", "viewer", "static_viewer", "web-viewer" ]
