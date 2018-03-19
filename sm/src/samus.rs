@@ -78,15 +78,7 @@ pub fn lookup_frame_sequence<'a>(rom: &'a Rom, state: usize) -> Sequence<'a> {
 pub fn lookup_pose_transitions<'a>(rom: &'a Rom, state: usize) -> Vec<Transition> {
     let offset = LittleEndian::read_u16(&rom.read(POSE_TRANSITION_TABLE.to_pc() + state * 2, 2)) as u32;
     let addr = (FRAME_DURATION_START + offset).to_pc();
-    let mut num_transitions = 0;
-    for (n, bytes) in rom[addr..].chunks(6).enumerate() {
-        if bytes[0] == 0xFF && bytes[1] == 0xFF {
-            num_transitions = n;
-            break;
-        }
-    }
-
-    rom[addr..addr + (6 * num_transitions)].chunks(6).map(|slice| {
+    rom[addr..].chunks(6).take_while(|chunk| chunk[0] != 0xFF && chunk[1] != 0xFF).map(|slice| {
         let controls_1 = LittleEndian::read_u16(&slice[0..2]);
         let controls_2 = LittleEndian::read_u16(&slice[2..4]);
         let input = ControllerInput::from_bits_truncate(controls_1 | controls_2);
