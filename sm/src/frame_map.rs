@@ -73,7 +73,7 @@ impl FrameMap {
         }
     }
 
-    pub fn composite(frame_maps: &[FrameMap], tiles: &[Tile], duration: u16) -> CompositedFrame {
+    pub fn composite(frame_maps: &[FrameMap], tiles: &[Tile], duration: u16, _v_offset: u8) -> CompositedFrame {
         let (zx, zy, width, height) = dimensions(frame_maps);
 
         let mut buffer = vec![0; width as usize * height as usize];

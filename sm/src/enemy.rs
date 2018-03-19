@@ -117,6 +117,6 @@ impl fmt::Debug for Frame {
 
 impl Frame {
     pub fn composited(&self, tiles: &[Tile]) -> CompositedFrame {
-        FrameMap::composite(&self.parts, tiles, self.duration)
+        FrameMap::composite(&self.parts, tiles, self.duration, 0)
     }
 }

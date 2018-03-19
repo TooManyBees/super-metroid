@@ -1,6 +1,7 @@
 #[cfg(feature="codegen")] use quote::{Tokens, ToTokens};
 pub use controller_input::ControllerInput;
 
+#[derive(Copy, Clone, Debug)]
 pub struct Transition {
     pub input: ControllerInput,
     pub to_pose: u8,

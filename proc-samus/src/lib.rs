@@ -23,7 +23,7 @@ use byteorder::{ByteOrder, LittleEndian};
 
 use sm::{snes, samus, frame_map, util};
 use snes::{Rom, PcAddress};
-use lib_samus::pose::Terminator;
+use lib_samus::pose::{ControllerInput, Transition, Terminator};
 use frame_map::FrameMap;
 use util::{zip3, bgr555_rgb888};
 
@@ -46,7 +46,7 @@ fn parse_pose_state(state: syn::Expr) -> usize {
     }
 }
 
-fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
+fn samus_pose_struct_tokens(name: Ident, state: usize, default_state: usize, v_offset: u8) -> Tokens {
     let name_str = name.into_tokens().to_string();
     let sequence = samus::lookup_frame_sequence(&ROM, state);
     let durations = sequence.0;
@@ -57,7 +57,7 @@ fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
     let tile_maps = samus::tilemaps(&ROM, state, durations.len());
     let tile_sets = samus::graphics(&ROM, state, durations.len());
     let frames: Vec<_> = zip3(tile_maps, &tile_sets, durations)
-        .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
+        .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16, v_offset)).collect();
 
     // Sure wish we could use lib-samus with the codegen feature here...
     let borrow_frames: Vec<_> = frames.into_iter().map(|f| {
@@ -76,6 +76,14 @@ fn samus_pose_struct_tokens(name: Ident, state: usize) -> Tokens {
             }
         }
     }).collect();
+
+    let mut transitions = transitions.to_vec();
+    if default_state != 0xFF && default_state != state {
+        transitions.push(Transition {
+            input: ControllerInput::empty(),
+            to_pose: default_state as u8,
+        });
+    }
 
     let transitions: Vec<_> = transitions.into_iter().map(|t| {
         let input_bits = t.input.bits();
@@ -122,15 +130,15 @@ impl Synom for Chosen {
     ));
 }
 
-fn parse_chosen_poses(input: TokenStream) -> Vec<(Ident, usize)> {
+fn parse_chosen_poses(input: TokenStream) -> Vec<(Ident, usize, usize, u8)> {
     let Chosen { ids } = syn::parse(input).expect("eep, hi there");
     let chosen: HashSet<_> = ids.into_iter().map(|state| parse_pose_state(state)).collect();
 
     poses_list::ALL.iter()
-        .filter_map(|&(state, name_str, _v_offset)| {
-            if chosen.is_empty() || chosen.contains(&state) {
+        .filter_map(|&(state, name_str, default_state, v_offset)| {
+            if chosen.is_empty() || chosen.contains(&state) || chosen.contains(&default_state) {
                 let name = Ident::from(name_str);
-                Some((name, state))
+                Some((name, state, default_state, v_offset))
             } else {
                 None
             }
@@ -143,11 +151,13 @@ const NUM_POSES: usize = 256;
 #[proc_macro]
 pub fn samus_poses(input: TokenStream) -> TokenStream {
     let poses = parse_chosen_poses(input);
-    let poses_tokens: Vec<_> = poses.iter().map(|&(name, state)| samus_pose_struct_tokens(name, state)).collect();
+    let poses_tokens: Vec<_> = poses.iter()
+        .map(|&(name, state, default_state, v_offset)| samus_pose_struct_tokens(name, state, default_state, v_offset))
+        .collect();
 
     let len = poses_tokens.len();
     let mut arr = vec![255u8; NUM_POSES];
-    for (n, &(_name, state)) in poses.iter().enumerate() {
+    for (n, &(_name, state, _default_state, _v_offset)) in poses.iter().enumerate() {
         arr[state] = n as u8;
     }
 

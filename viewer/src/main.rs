@@ -196,7 +196,7 @@ fn main() {
             let tile_maps = samus::tilemaps(&ROM, addr as usize, durations.len());
             let tile_sets = samus::graphics(&ROM, addr as usize, durations.len());
             let frames: Vec<_> = zip3(tile_maps, &tile_sets, durations)
-                .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16)).collect();
+                .map(|(tm, ts, ds)| FrameMap::composite(&tm, &ts, *ds as u16, 0)).collect();
             let p = PcAddress(0xD9400); // lol trolled, not a snes address. There goes 1 day... :/
             let palette: Vec<_> = ROM.read(p, 32)
                 .chunks(2)
