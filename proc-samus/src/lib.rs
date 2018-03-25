@@ -132,11 +132,27 @@ impl Synom for Chosen {
 
 fn parse_chosen_poses(input: TokenStream) -> Vec<(Ident, usize, usize, u8)> {
     let Chosen { ids } = syn::parse(input).expect("eep, hi there");
-    let chosen: HashSet<_> = ids.into_iter().map(|state| parse_pose_state(state)).collect();
+
+    let chosen: HashSet<_> = {
+        let chosen: Vec<_> = ids.into_iter()
+            .map(|state| parse_pose_state(state))
+            .collect();
+        let defaults: Vec<_> = poses_list::ALL.iter()
+            .filter_map(|&(state, _, default_state, _)| {
+                if chosen.contains(&state) {
+                    Some(default_state)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        chosen.into_iter().chain(defaults.into_iter()).collect()
+    };
 
     poses_list::ALL.iter()
         .filter_map(|&(state, name_str, default_state, v_offset)| {
-            if chosen.is_empty() || chosen.contains(&state) || chosen.contains(&default_state) {
+            if chosen.is_empty() || chosen.contains(&state) {
                 let name = Ident::from(name_str);
                 Some((name, state, default_state, v_offset))
             } else {
