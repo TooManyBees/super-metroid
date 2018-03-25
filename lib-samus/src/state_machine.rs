@@ -40,10 +40,6 @@ impl<'a> StateMachine<'a> {
         false
     }
 
-    // fn stop(&mut self, input: ControllerInput) -> bool {
-    //     match 
-    // }
-
     pub fn fall(&mut self) -> bool {
         let next_pose = match self.current.id {
             0x13 => 0x67, // right jump gun extended
