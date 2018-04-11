@@ -1,2 +1,5 @@
 [workspace]
 members = [ "snes-bitplanes", "sm", "lib-samus", "proc-samus", "viewer", "static_viewer", "web-viewer" ]
+
+[profile.release]
+lto = true
