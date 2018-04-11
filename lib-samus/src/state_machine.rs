@@ -20,21 +20,24 @@ impl<'a> StateMachine<'a> {
         match self.current.next() {
             Next::Frame(frame, duration) => (frame, duration),
             Next::NewPose(n) => {
-                self.goto(n as usize);
+                let updated = self.goto(n as usize);
+                if updated {
+                    // Retrigger the input to account for holding an input button down
+                    let input = self.input;
+                    self.input(input);
+                }
                 self.next()
             },
         }
     }
 
     pub fn input(&mut self, pressed: ControllerInput) -> bool {
+        self.input = pressed;
         if let Some(transition) = self.current.transitions.iter().find(|t| t.input == pressed) {
             if transition.to_pose != self.current.id as u8 {
                 // FIXME: may want to extend an exception to
                 // space-jumping into the same animation
-                if self.goto(transition.to_pose as usize) {
-                    self.input = pressed;
-                    return true
-                }
+                return self.goto(transition.to_pose as usize);
             }
         }
         false
