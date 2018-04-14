@@ -1,6 +1,6 @@
 [package]
 name = "snes-bitplanes"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Jess Bees <jesse@toomanybees.com>"]
 description = "Decoder for the Super NES's bitplanes graphics"
 repository = "https://github.com/TooManyBees/super-metroid/tree/master/snes-bitplanes"
