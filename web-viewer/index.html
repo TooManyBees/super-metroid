@@ -41,26 +41,31 @@
                     var nextFrameTime = null;
 
                     function keydown(key) {
-                        var success =  wasmExports.input(stateMachinePtr, key);
+                        var success = wasmExports.input(stateMachinePtr, key);
                         if (success) nextFrameTime = null;
                     }
 
                     function keyup(key) {
-                        var success =  wasmExports.input_end(stateMachinePtr, key);
+                        var success = wasmExports.input_end(stateMachinePtr, key);
                         if (success) nextFrameTime = null;
                     }
 
                     function nextFrame() {
-                       return wasmExports.next_frame(stateMachinePtr, buffer, width, height);
+                        return wasmExports.next_frame(stateMachinePtr, buffer, width, height);
                     }
 
                     function fall() {
-                        var success =  wasmExports.fall(stateMachinePtr);
+                        var success = wasmExports.fall(stateMachinePtr);
                         if (success) nextFrameTime = null;
                     }
 
                     function land() {
-                        var success =  wasmExports.land(stateMachinePtr);
+                        var success = wasmExports.land(stateMachinePtr);
+                        if (success) nextFrameTime = null;
+                    }
+
+                    function bonk() {
+                        var success = wasmExports.bonk(stateMachinePtr);
                         if (success) nextFrameTime = null;
                     }
 
@@ -79,15 +84,17 @@
                                 land();
                             } else if (event.key === "f") {
                                 fall();
+                            } else if (event.key === "b") {
+                                bonk();
                             } else {
                                 keydown(event.keyCode);
                             }
                         }
-                    })
+                    });
 
                     window.addEventListener('keyup', function(event) {
                         keyup(event.keyCode);
-                    })
+                    });
 
                     go();
 
@@ -105,6 +112,7 @@
             };
         })();
 
+        samus.load();
     </script>
 </body>
 </html>

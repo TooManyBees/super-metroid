@@ -50,6 +50,8 @@ proc_samus::samus_poses!([
     0x82, // screw_attack_left
     0x87, // falling_turn_right_to_left
     0x88, // falling_turn_left_to_right
+    0x89, // rain_into_wall_right
+    0x8A, // rain_into_wall_left
     0xA4, // landing_facing_right
     0xA5, // landing_facing_left
     0xA6, // landing_spinjump_facing_right
@@ -122,6 +124,14 @@ pub extern fn fall(state_ptr: *mut StateMachine<'static>) -> bool {
 pub extern fn land(state_ptr: *mut StateMachine<'static>) -> bool {
     let mut state = unsafe { Box::from_raw(state_ptr) };
     let ret = state.land();
+    mem::forget(state);
+    ret
+}
+
+#[no_mangle]
+pub extern fn bonk(state_ptr: *mut StateMachine<'static>) -> bool {
+    let mut state = unsafe { Box::from_raw(state_ptr) };
+    let ret = state.bonk();
     mem::forget(state);
     ret
 }

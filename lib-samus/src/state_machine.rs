@@ -43,6 +43,20 @@ impl<'a> StateMachine<'a> {
         false
     }
 
+    pub fn bonk(&mut self) -> bool {
+        // let next_pose = match self.current.id {
+        //     0x09 | 0x0B => 0x89, // running right
+        //     0x0A | 0x0C => 0x8A, // running left
+        //     0x11 => 0xCF, // running right aiming down
+        //     0x10 => 0xD0, // running left aiming up
+        //     0x0F => 0xD1, // running right aiming up
+        //     0x12 => 0xD2, // running left aiming down
+        //     _ => return self.input(ControllerInput::empty()),
+        // };
+        // self.goto(next_pose)
+        self.input(ControllerInput::empty())
+    }
+
     pub fn fall(&mut self) -> bool {
         let next_pose = match self.current.id {
             0x13 => 0x67, // right jump gun extended

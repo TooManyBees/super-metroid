@@ -856,12 +856,12 @@ version = "0.1.0"
 dependencies = [
  "byteorder 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lib-samus 0.1.0",
- "snes-bitplanes 0.2.0",
+ "snes-bitplanes 0.2.1",
 ]
 
 [[package]]
 name = "snes-bitplanes"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "static_viewer"
@@ -968,7 +968,7 @@ dependencies = [
  "gif 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "piston_window 0.77.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sm 0.1.0",
- "snes-bitplanes 0.2.0",
+ "snes-bitplanes 0.2.1",
 ]
 
 [[package]]
