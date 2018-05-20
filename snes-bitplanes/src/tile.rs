@@ -1,5 +1,5 @@
 use core::slice::{Chunks, Iter, IterMut};
-use core::{borrow, cmp, default, fmt, hash, ops, slice};
+use core::{borrow, cmp, default, fmt, hash, ops};
 
 /// `Tile` is a tuple struct wrapping an 8x8 byte array:
 /// conceptually a tile of SNES graphics.
@@ -91,7 +91,7 @@ impl ops::Index<usize> for Tile {
 
 impl Tile {
     pub fn iter(&self) -> Iter<u8> {
-        slice::SliceExt::iter(&self.0[..])
+        self.0.iter()
     }
 
     pub fn chunks(&self, n: usize) -> Chunks<u8> {
