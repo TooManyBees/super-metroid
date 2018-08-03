@@ -1,4 +1,3 @@
-#![feature(proc_macro)]
 #![recursion_limit="128"]
 
 extern crate proc_macro;
@@ -179,6 +178,7 @@ pub fn samus_poses(input: TokenStream) -> TokenStream {
 
     TokenStream::from(quote!{
         mod poses {
+            use lib_samus::pose::*;
             static POSES: [Pose; #len] = [#(#poses_tokens),*];
             static LOOKUP: [u8; #NUM_POSES] = [#(#arr),*];
 

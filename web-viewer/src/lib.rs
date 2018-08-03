@@ -1,10 +1,9 @@
-#![feature(proc_macro)]
+#![feature(proc_macro_gen)]
+#![feature(use_extern_macros)]
 extern crate proc_samus;
 extern crate lib_samus;
 
 use std::{mem, slice};
-use std::os::raw::c_void;
-use std::boxed::Box;
 use lib_samus::pose::*;
 use lib_samus::StateMachine;
 
@@ -50,8 +49,8 @@ proc_samus::samus_poses!([
     0x82, // screw_attack_left
     0x87, // falling_turn_right_to_left
     0x88, // falling_turn_left_to_right
-    0x89, // rain_into_wall_right
-    0x8A, // rain_into_wall_left
+    0x89, // ran_into_wall_right
+    0x8A, // ran_into_wall_left
     0xA4, // landing_facing_right
     0xA5, // landing_facing_left
     0xA6, // landing_spinjump_facing_right
